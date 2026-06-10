@@ -1,0 +1,123 @@
+@mixin flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+@mixin ellipsis($lines: 1) {
+  @if $lines == 1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  } @else {
+    display: -webkit-box;
+    -webkit-line-clamp: $lines;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+@mixin button-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 28px;
+  font-family: $font-family-fun;
+  font-size: 20px;
+  font-weight: 500;
+  color: #fff;
+  background: $primary-color;
+  border: none;
+  border-radius: $border-radius-base;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: $shadow-colored;
+  user-select: none;
+
+  &:hover {
+    background: $primary-light;
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: $shadow-sm;
+  }
+
+  &:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+}
+
+@mixin mizi-grid($size: 100%) {
+  position: relative;
+  width: $size;
+  aspect-ratio: 1;
+  background: #fff;
+  border: 3px solid $accent-color;
+  border-radius: $border-radius-sm;
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    background: repeating-linear-gradient(
+      to right,
+      rgba(255, 138, 61, 0.3) 0,
+      rgba(255, 138, 61, 0.3) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+    pointer-events: none;
+  }
+
+  &::before {
+    inset: 0;
+    background:
+      linear-gradient(to right, transparent calc(50% - 0.5px), rgba(255, 138, 61, 0.35) calc(50% - 0.5px), rgba(255, 138, 61, 0.35) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+      linear-gradient(to bottom, transparent calc(50% - 0.5px), rgba(255, 138, 61, 0.35) calc(50% - 0.5px), rgba(255, 138, 61, 0.35) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+  }
+
+  &::after {
+    inset: 0;
+    background:
+      linear-gradient(45deg, transparent calc(50% - 0.5px), rgba(255, 138, 61, 0.25) calc(50% - 0.5px), rgba(255, 138, 61, 0.25) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+      linear-gradient(-45deg, transparent calc(50% - 0.5px), rgba(255, 138, 61, 0.25) calc(50% - 0.5px), rgba(255, 138, 61, 0.25) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+  }
+}
+
+@mixin fun-card {
+  background: #fff;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-base;
+  padding: $spacing-unit * 3;
+}
+
+@mixin shake-animation {
+  animation: shake 0.4s ease-in-out;
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
+  }
+}
+
+@mixin bounce-animation {
+  animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+
+  @keyframes bounce-in {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+}

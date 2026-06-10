@@ -1,0 +1,213 @@
+.mapPage {
+  min-height: 100vh;
+  padding-bottom: 40px;
+  transition: background 0.4s ease;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(6px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.backBtn {
+  background: #fff;
+  border: 2px solid #2d8b57;
+  color: #2d8b57;
+  font-size: 16px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.titleWrap { text-align: center; }
+.title {
+  font-family: "ZCOOL KuaiLe", sans-serif;
+  font-size: 28px;
+  color: #1f6b40;
+  margin: 0;
+  letter-spacing: 3px;
+}
+.subtitle { color: #6b6b6b; font-size: 14px; }
+
+.starsTag {
+  background: #fff;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: 600;
+  color: #ff8a3d;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.levelTabs {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 18px 12px 10px;
+  flex-wrap: wrap;
+}
+
+.levelTab {
+  position: relative;
+  padding: 10px 18px;
+  background: #fff;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  font-family: "ZCOOL KuaiLe", sans-serif;
+  font-size: 18px;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &.active {
+    background: #2d8b57;
+    color: #fff;
+    border-color: #1f6b40;
+  }
+
+  &.locked {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .lockMini { margin-left: 6px; }
+}
+
+.mapArea {
+  max-width: 1100px;
+  margin: 20px auto 0;
+  padding: 0 16px;
+  position: relative;
+}
+
+.empty {
+  text-align: center;
+  padding: 80px 20px;
+  background: rgba(255,255,255,0.75);
+  border-radius: 24px;
+  color: #555;
+}
+
+.charGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 18px;
+}
+
+.charBox {
+  position: relative;
+  padding: 18px 10px 14px;
+  background: #fff;
+  border: 3px solid #ffd76a;
+  border-radius: 22px;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  text-align: center;
+  transition: transform 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+
+  &:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,0.12); }
+  &:active { transform: translateY(1px); }
+
+  &.done {
+    border-color: #2d8b57;
+    background: linear-gradient(180deg, #f0fff4, #e0f5e8);
+  }
+
+  &.nextOne {
+    border-color: #ff8a3d;
+    box-shadow: 0 0 0 4px rgba(255,138,61,0.18), 0 8px 20px rgba(0,0,0,0.1);
+    animation: pulseNext 1.8s ease-in-out infinite;
+  }
+}
+
+@keyframes pulseNext {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.charIndex {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  background: #ffd76a;
+  color: #5a4a00;
+  border-radius: 999px;
+  font-size: 12px;
+  padding: 2px 8px;
+  font-weight: 700;
+}
+
+.charEmoji { font-size: 32px; margin-bottom: 2px; }
+.charBig {
+  font-family: "KaiTi", "STKaiti", "PingFang SC", serif;
+  font-size: 48px;
+  color: #2b2b2b;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.charPinyin {
+  font-size: 14px;
+  color: #ff8a3d;
+  margin-top: 4px;
+  letter-spacing: 2px;
+}
+
+.charStars {
+  margin-top: 6px;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  font-size: 16px;
+}
+.star { color: #ddd; }
+.star.lit { color: #ffb400; text-shadow: 0 1px 0 rgba(0,0,0,0.15); }
+
+.doneTick {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  background: #2d8b57;
+  color: #fff;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nextRibbon {
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ff8a3d;
+  color: #fff;
+  padding: 3px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  box-shadow: 0 4px 10px rgba(255,138,61,0.4);
+}
+
+.footHint {
+  text-align: center;
+  margin-top: 30px;
+  color: #6b6b6b;
+  font-size: 14px;
+}
+
+.pathLine {
+  display: none;
+}

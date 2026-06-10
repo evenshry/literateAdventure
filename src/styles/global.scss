@@ -1,0 +1,139 @@
+@import "./variables";
+@import "./mixins";
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100vh;
+  font-family: $font-family-base;
+  font-size: 16px;
+  color: $text-color;
+  background: $bg-gradient;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100vh;
+  background-attachment: fixed;
+}
+
+a {
+  color: $primary-color;
+  text-decoration: none;
+
+  &:hover {
+    color: $primary-light;
+  }
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+  outline: none;
+}
+
+button:focus-visible {
+  outline: 3px solid rgba(255, 138, 61, 0.5);
+  outline-offset: 2px;
+}
+
+input,
+textarea {
+  font-family: inherit;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(45, 139, 87, 0.4);
+  border-radius: 4px;
+
+  &:hover {
+    background: $primary-color;
+  }
+}
+
+.app-root {
+  min-height: 100vh;
+  position: relative;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: $spacing-unit * 2;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.title-fun {
+  font-family: $font-family-fun;
+  font-size: 32px;
+  color: $primary-dark;
+  text-align: center;
+}
+
+.btn-primary {
+  @include button-base;
+}
+
+.btn-secondary {
+  @include button-base;
+  background: $accent-color;
+  box-shadow: 0 8px 24px rgba(255, 138, 61, 0.4);
+
+  &:hover {
+    background: $accent-light;
+  }
+}
+
+.btn-ghost {
+  @include button-base;
+  background: #fff;
+  color: $primary-color;
+  border: 2px solid $primary-color;
+  box-shadow: none;
+
+  &:hover {
+    background: rgba(45, 139, 87, 0.08);
+    transform: translateY(-2px);
+    box-shadow: $shadow-base;
+  }
+}
+
+.card {
+  @include fun-card;
+}
+
+.star-icon {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  vertical-align: middle;
+}

@@ -1,0 +1,41 @@
+$primary-color: #2d8b57;
+$primary-light: #4dbd7c;
+$primary-dark: #1f6b40;
+
+$accent-color: #ff8a3d;
+$accent-light: #ffb37a;
+$accent-dark: #e56b1f;
+
+$warning-color: #f5a623;
+$error-color: #e85d5d;
+$success-color: #52c41a;
+
+$bg-color: #fef9ec;
+$bg-gradient: linear-gradient(180deg, #fff5d6 0%, #fef9ec 40%, #e8f5e0 100%);
+
+$text-color: #3a3a3a;
+$text-light: #6b6b6b;
+$text-muted: #999;
+
+$border-radius-base: 16px;
+$border-radius-sm: 10px;
+$border-radius-lg: 24px;
+
+$spacing-unit: 8px;
+
+$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+$shadow-base: 0 4px 16px rgba(0, 0, 0, 0.12);
+$shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
+$shadow-colored: 0 8px 24px rgba(45, 139, 87, 0.35);
+
+$breakpoints: (
+  sm: 480px,
+  md: 768px,
+  lg: 1024px,
+  xl: 1280px,
+);
+
+$font-family-base:
+  "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Comic Neue", "Helvetica Neue", Arial,
+  sans-serif;
+$font-family-fun: "ZCOOL KuaiLe", "PingFang SC", "Microsoft YaHei", sans-serif;

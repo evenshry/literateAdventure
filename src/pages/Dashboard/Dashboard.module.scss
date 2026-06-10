@@ -1,0 +1,249 @@
+.page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #fff5d6, #fef9ec 40%, #f0fff4);
+  padding: 18px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 960px;
+  margin: 0 auto 20px;
+}
+
+.back {
+  background: #fff;
+  border: 2px solid #2d8b57;
+  color: #1f6b40;
+  padding: 8px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.title {
+  font-family: "ZCOOL KuaiLe", sans-serif;
+  font-size: 32px;
+  color: #1f6b40;
+  letter-spacing: 3px;
+}
+
+.spacer { width: 70px; }
+
+.summary {
+  max-width: 960px;
+  margin: 0 auto 22px;
+}
+
+.bigCard {
+  background: linear-gradient(135deg, #fff, #fff8ec);
+  border-radius: 24px;
+  padding: 26px 22px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.07);
+  border: 2px solid rgba(45,139,87,0.15);
+}
+
+.subtitle {
+  font-family: "ZCOOL KuaiLe", sans-serif;
+  color: #1f6b40;
+  font-size: 22px;
+  letter-spacing: 3px;
+  margin-bottom: 18px;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+
+  @media (max-width: 600px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.bigNum {
+  font-family: "ZCOOL KuaiLe", sans-serif;
+  font-size: 40px;
+  color: #ff8a3d;
+}
+
+.smallLabel {
+  color: #666;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.levelSection {
+  max-width: 960px;
+  margin: 0 auto 24px;
+
+  h2 {
+    font-family: "ZCOOL KuaiLe", sans-serif;
+    color: #1f6b40;
+    margin-bottom: 14px;
+    letter-spacing: 2px;
+  }
+}
+
+.levelCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.levelCard {
+  background: #fff;
+  border-radius: 18px;
+  padding: 16px 18px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+}
+
+.levelName {
+  font-family: "ZCOOL KuaiLe", sans-serif;
+  color: #1f6b40;
+  font-size: 20px;
+  letter-spacing: 2px;
+}
+
+.levelSub { color: #888; font-size: 13px; margin-top: 2px; }
+
+.levelBar {
+  position: relative;
+  margin-top: 12px;
+  height: 22px;
+  background: #f0f0f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.levelFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, #ffd76a, #ff8a3d);
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+.levelText {
+  position: relative;
+  display: inline-block;
+  padding: 2px 14px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  margin-left: 12px;
+  line-height: 18px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.recentSection {
+  max-width: 960px;
+  margin: 0 auto 24px;
+
+  h2 {
+    font-family: "ZCOOL KuaiLe", sans-serif;
+    color: #1f6b40;
+    margin-bottom: 14px;
+    letter-spacing: 2px;
+  }
+}
+
+.empty {
+  background: #fff;
+  border-radius: 18px;
+  padding: 40px 20px;
+  text-align: center;
+  color: #666;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+}
+
+.goMapBtn {
+  margin-top: 12px;
+  padding: 12px 26px;
+  background: linear-gradient(180deg, #5bd48b, #2d8b57);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: 0 6px 14px rgba(45,139,87,0.3);
+
+  &:hover { transform: translateY(-2px); }
+}
+
+.recentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.recentCard {
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px 10px;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+}
+
+.recentChar {
+  font-family: "KaiTi", "STKaiti", serif;
+  font-size: 42px;
+  font-weight: 700;
+  color: #1f6b40;
+}
+
+.recentPinyin { color: #ff8a3d; font-size: 14px; letter-spacing: 2px; }
+
+.recentStars {
+  font-size: 16px;
+  margin: 6px 0;
+  color: #ffb400;
+  letter-spacing: 2px;
+}
+
+.recentStars .off { color: #ddd; }
+
+.recentSteps {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.stepBadge {
+  font-size: 12px;
+  background: #f0f0f0;
+  color: #888;
+  padding: 3px 8px;
+  border-radius: 999px;
+
+  &.on {
+    background: #2d8b57;
+    color: #fff;
+  }
+}
+
+.reviewBtn {
+  padding: 8px 14px;
+  background: #fff8ec;
+  color: #b85700;
+  border: 2px solid #ffd76a;
+  border-radius: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  font-size: 14px;
+
+  &:hover { background: #ffedb4; }
+}
+
+.foot {
+  text-align: center;
+  color: #999;
+  font-size: 13px;
+  margin: 30px auto 20px;
+  max-width: 600px;
+  line-height: 1.8;
+}

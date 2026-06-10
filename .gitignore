@@ -1,18 +1,57 @@
-# Build and Release Folders
-bin-debug/
-bin-release/
-[Oo]bj/
-[Bb]in/
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+package-lock.json
 
-# Other files and folders
-.settings/
+# Build outputs
+dist
+dist-ssr
+*.local
 
-# Executables
-*.swf
-*.air
-*.ipa
-*.apk
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.pem
 
-# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-# should NOT be excluded as they contain compiler settings and other important
-# information for Eclipse / Flash Builder.
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Testing
+coverage
+
+# Vite
+.vite
+
+# TypeScript
+*.tsbuildinfo
+react-env.d.ts
+
+# ESLint
+.eslintcache
+
+# Git
+*.orig
+*.bak
+.yarn
