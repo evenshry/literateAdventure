@@ -9,6 +9,7 @@ interface ProgressState {
   setLevel: (level: LevelId) => void;
   markStepComplete: (char: string, step: StepId) => void;
   awardStarsForChar: (char: string, stars: number) => void;
+  addWrong: (char: string) => void;
   addToWrongList: (char: string) => void;
   removeFromWrongList: (char: string) => void;
   resetAll: () => Promise<void>;
@@ -41,6 +42,7 @@ function getCharProgress(
       steps: { recognize: false, write: false, practice: false, read: false },
       stars: 0,
       completed: false,
+      wrongCount: 0,
     });
 }
 
@@ -84,10 +86,37 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       learnedChars = [...learnedChars, char];
     }
 
+    // 字全部学会后自动移出错字本
+    const wasInWrongList = state.data.wrongList.includes(char);
+    const wrongList = wasInWrongList && allDone
+      ? state.data.wrongList.filter((c) => c !== char)
+      : state.data.wrongList;
+
     const nextData: UserProgress = {
       ...state.data,
       charProgress: { ...state.data.charProgress, [char]: nextCharProgress },
       learnedChars,
+      wrongList,
+      updatedAt: Date.now(),
+    };
+    set({ data: nextData });
+    void state._persist(nextData);
+  },
+
+  addWrong(char) {
+    const state = get();
+    const cp = getCharProgress(state, char);
+    const nextCharProgress: CharProgress = { ...cp, wrongCount: cp.wrongCount + 1 };
+
+    const alreadyInWrongList = state.data.wrongList.includes(char);
+    const wrongList = alreadyInWrongList
+      ? state.data.wrongList
+      : [...state.data.wrongList, char];
+
+    const nextData: UserProgress = {
+      ...state.data,
+      charProgress: { ...state.data.charProgress, [char]: nextCharProgress },
+      wrongList,
       updatedAt: Date.now(),
     };
     set({ data: nextData });

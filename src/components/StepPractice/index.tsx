@@ -1,68 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { speak } from '@/utils/speech';
 import { useSound } from '@/hooks/useSound';
+import { useProgressStore } from '@/store/progressStore';
 import type { StepPracticeProps } from './types';
-import type { HanziData } from '@/types/global';
+import type { PracticeQuestion } from '@/types/global';
 import styles from './StepPractice.module.scss';
 
-type GameType = 'match' | 'fill' | 'puzzle';
-
-interface Question {
-  type: GameType;
-  prompt: string;
-  options: string[];
-  answer: string;
-}
-
-function buildQuestions(hanzi: HanziData): Question[] {
-  const qs: Question[] = [];
-  // Match: pick correct word containing the char
-  const correctExamples = hanzi.examples.slice(0, 3);
-  const distractorsPool = ['大山', '小河', '天上', '地下', '红花', '绿叶', '白云', '黑土', '快跑', '慢走'];
-  
-  for (let i = 0; i < correctExamples.length; i++) {
-    const correctWord = correctExamples[i];
-    // 从干扰池中选两个不包含当前字的词
-    const availableDistractors = distractorsPool.filter(d => !d.includes(hanzi.char));
-    const wrong1 = availableDistractors[i % availableDistractors.length];
-    const wrong2 = availableDistractors[(i + 1) % availableDistractors.length];
-    qs.push({
-      type: 'match',
-      prompt: `找出包含「${hanzi.char}」的词语`,
-      options: shuffle([correctWord, wrong1, wrong2]),
-      answer: correctWord,
-    });
-  }
-
-  // Fill: sentence with blank
-  for (const sentence of hanzi.sentences) {
-    if (!sentence.includes(hanzi.char)) continue;
-    const blankSentence = sentence.replace(hanzi.char, '___');
-    // 动态生成干扰选项（从其他已学汉字中选）
-    const distractors = ['木', '土', '日', '月', '水', '火', '山', '石']
-      .filter(c => c !== hanzi.char)
-      .slice(0, 2);
-    qs.push({
-      type: 'fill',
-      prompt: `填空：${blankSentence}`,
-      options: shuffle([hanzi.char, ...distractors]),
-      answer: hanzi.char,
-    });
-  }
-
-  // Puzzle: pick emoji matching the character
-  const emojiDistractors = ['🌳', '🐟', '⚡', '🌈', '🏠', '🚗', '📚', '🎵']
-    .filter(e => e !== hanzi.emoji)
-    .slice(0, 3);
-  qs.push({
-    type: 'puzzle',
-    prompt: `下面哪个图画最像「${hanzi.char}」？`,
-    options: shuffle([hanzi.emoji, ...emojiDistractors]),
-    answer: hanzi.emoji,
-  });
-
-  return qs;
-}
+const WRONG_THRESHOLD = 2; // 连续答错此次数后加入错字本
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -73,22 +17,43 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+function getTip(type: PracticeQuestion['type'], char: string): string {
+  if (type === 'match') return `💡 读一读每个词语，找找哪个有「${char}」`;
+  if (type === 'fill') return '💡 想一想空格里应该填哪个字？';
+  return '💡 看看这个字最像哪张图？';
+}
+
 function StepPractice({ hanzi, completed, onComplete }: StepPracticeProps) {
-  const questions = useMemo(() => buildQuestions(hanzi), [hanzi]);
+  const practiceData = hanzi.practice ?? [];
+  const { addWrong } = useProgressStore();
+
   const [idx, setIdx] = useState(0);
   const [score, setScore] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
   const [shake, setShake] = useState(false);
   const [finished, setFinished] = useState(completed);
+  const [shuffledOptions, setShuffledOptions] = useState<string[]>(() =>
+    shuffle(practiceData[0]?.options ?? [])
+  );
   const { playCorrect, playWrong, playComplete } = useSound();
 
-  const needCorrect = 3;
-  const q = questions[idx % questions.length];
+  // 跟踪连续答错的次数
+  const consecutiveWrongRef = useRef(0);
+
+  const needCorrect = Math.min(3, practiceData.length);
+  const currentQ = practiceData[idx % practiceData.length];
+
+  // 切换题目时打乱选项
+  useEffect(() => {
+    setShuffledOptions(shuffle(practiceData[idx % practiceData.length]?.options ?? []));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx]);
 
   function onPick(option: string) {
     if (picked) return;
     setPicked(option);
-    if (option === q.answer) {
+    if (option === currentQ.answer) {
+      consecutiveWrongRef.current = 0;
       playCorrect();
       const nextScore = score + 1;
       setScore(nextScore);
@@ -99,11 +64,16 @@ function StepPractice({ hanzi, completed, onComplete }: StepPracticeProps) {
           setFinished(true);
           onComplete();
         } else {
-          setIdx(idx + 1);
+          setIdx((i) => i + 1);
           setPicked(null);
         }
       }, 900);
     } else {
+      consecutiveWrongRef.current += 1;
+      // 连续答错达到阈值，加入错字本
+      if (consecutiveWrongRef.current >= WRONG_THRESHOLD) {
+        addWrong(hanzi.char);
+      }
       playWrong();
       setShake(true);
       void speak('再试试！', { rate: 1.1 });
@@ -116,7 +86,26 @@ function StepPractice({ hanzi, completed, onComplete }: StepPracticeProps) {
     setIdx(0);
     setScore(0);
     setPicked(null);
+    consecutiveWrongRef.current = 0;
+    setShuffledOptions(shuffle(practiceData[0]?.options ?? []));
     setFinished(false);
+  }
+
+  // 无练习题时的降级
+  if (practiceData.length === 0) {
+    return (
+      <div className={styles.card}>
+        <h3 className={styles.title}>🎯 练一练，加深记忆</h3>
+        <div className={styles.done}>
+          <div className={styles.bigIcon}>🎉</div>
+          <div className={styles.bigText}>没有练习题！</div>
+          <p>这个字已经学会啦！</p>
+          <button className={styles.ghostBtn} onClick={onComplete}>
+            继续下一环节
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -136,13 +125,13 @@ function StepPractice({ hanzi, completed, onComplete }: StepPracticeProps) {
         <>
           <div className={styles.prompt}>
             <div className={styles.qLabel}>第 {idx + 1} 题</div>
-            <div className={styles.qText}>{q.prompt}</div>
+            <div className={styles.qText}>{currentQ.question}</div>
           </div>
 
           <div className={styles.options}>
-            {q.options.map((opt) => {
-              const isCorrect = picked && opt === q.answer;
-              const isWrong = picked === opt && opt !== q.answer;
+            {shuffledOptions.map((opt) => {
+              const isCorrect = picked && opt === currentQ.answer;
+              const isWrong = picked === opt && opt !== currentQ.answer;
               return (
                 <button
                   key={opt}
@@ -158,11 +147,7 @@ function StepPractice({ hanzi, completed, onComplete }: StepPracticeProps) {
             })}
           </div>
 
-          <p className={styles.tip}>
-            {q.type === 'match' && '💡 读一读每个词语，找找哪个有「' + hanzi.char + '」'}
-            {q.type === 'fill' && '💡 想一想空格里应该填哪个字？'}
-            {q.type === 'puzzle' && '💡 看看这个字最像哪张图？'}
-          </p>
+          <p className={styles.tip}>{getTip(currentQ.type, hanzi.char)}</p>
         </>
       ) : (
         <div className={styles.done}>

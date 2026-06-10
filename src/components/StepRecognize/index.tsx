@@ -38,7 +38,7 @@ function StepRecognize({ hanzi, completed, onComplete }: StepRecognizeProps) {
 
         <div className={styles.meanBox}>
           <div className={styles.emoji} role="img" aria-label="meaning icon">{hanzi.emoji}</div>
-          <div className={styles.pinyin}>{hanzi.pinyin}</div>
+          <div className={styles.pinyin}>{hanzi.tonePinyin || hanzi.pinyin}</div>
           <div className={styles.meaning}>{hanzi.meaning}</div>
           <div className={styles.buttonsRow}>
             <button className={styles.speakBtn} onClick={playPronunciation}>🔊 听一听</button>

@@ -8,6 +8,8 @@ import styles from './index.module.scss';
 
 const NODE_SIZE = 56;
 const MAP_HEIGHT = 560;
+const FLOWER_CANVAS_HEIGHT = 200;
+const FLOWER_CANVAS_OFFSET_Y = 350;
 
 interface NodePosition {
   x: number;
@@ -242,6 +244,9 @@ function Map() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
   const scrollLeftRef = useRef<number>(0);
+  const visibleWidthRef = useRef<number>(700);
+  // 预渲染花朵的离屏 canvas，避免每帧重复绘制
+  const flowerCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const levelId: LevelId = (level as LevelId) ?? data.currentLevel;
   const levelInfo = useMemo(() => LEVELS.find((l) => l.id === levelId) ?? LEVELS[0], [levelId]);
@@ -377,6 +382,23 @@ function Map() {
     [nodePositions, chars, navigate]
   );
 
+  // 预渲染花朵到离屏 canvas（只执行一次，数据变化时重建）
+  useEffect(() => {
+    if (flowerClusters.length === 0) return;
+    const offscreen = document.createElement('canvas');
+    offscreen.width = mapWidth;
+    offscreen.height = FLOWER_CANVAS_HEIGHT;
+    const fctx = offscreen.getContext('2d');
+    if (!fctx) return;
+    fctx.font = '22px serif';
+    flowerClusters.forEach((cluster) => {
+      cluster.flowers.forEach((flower) => {
+        fctx.fillText(flower.emoji, cluster.x + flower.ox - 10, cluster.y - FLOWER_CANVAS_OFFSET_Y + flower.oy);
+      });
+    });
+    flowerCanvasRef.current = offscreen;
+  }, [mapWidth, flowerClusters]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -388,7 +410,9 @@ function Map() {
     const scrollParent = canvas.parentElement;
     const handleScroll = () => {
       scrollLeftRef.current = scrollParent?.scrollLeft || 0;
+      visibleWidthRef.current = scrollParent?.clientWidth || 700;
     };
+    handleScroll();
     scrollParent?.addEventListener('scroll', handleScroll, { passive: true });
 
     let startTime = performance.now();
@@ -399,8 +423,9 @@ function Map() {
       // draw sky
       drawSky(ctx, mapWidth, MAP_HEIGHT);
 
-      // draw sun - fixed at top-right of the visible canvas area
-      drawSun(ctx, elapsed, scrollLeftRef.current + mapWidth - 100);
+      // draw sun - 固定在可见区域右上角
+      const sunX = scrollLeftRef.current + visibleWidthRef.current - 100;
+      drawSun(ctx, elapsed, sunX);
 
       // draw clouds
       cloudPositions.forEach((cloud) => {
@@ -419,17 +444,14 @@ function Map() {
       // draw grass
       drawGrass(ctx, mapWidth);
 
+      // 绘制预渲染的花朵（静态层，只画一次后缓存）
+      if (flowerCanvasRef.current) {
+        ctx.drawImage(flowerCanvasRef.current, 0, FLOWER_CANVAS_OFFSET_Y);
+      }
+
       // draw trees
       treePositions.forEach((tree) => {
         drawTree(ctx, tree.x, tree.y, tree.scale, elapsed + tree.phase);
-      });
-
-      // draw flowers - static, no animation
-      ctx.font = '22px serif';
-      flowerClusters.forEach((cluster) => {
-        cluster.flowers.forEach((flower) => {
-          ctx.fillText(flower.emoji, cluster.x + flower.ox - 10, cluster.y + flower.oy);
-        });
       });
 
       // draw paths
@@ -490,7 +512,7 @@ function Map() {
         ctx.fillStyle = completed ? '#2d8b57' : '#2b2b2b';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(completed ? '⭐' : h.char, pos.x, pos.y + 2);
+        ctx.fillText(completed ? '⭐' : h.char, pos.x, pos.y - 4);
 
         // player character - yellow smiley emoji
         if (isCurrent && !completed) {
@@ -529,7 +551,6 @@ function Map() {
     treePositions,
     cloudPositions,
     butterflyPositions,
-    flowerClusters,
   ]);
 
   function switchLevel(lid: LevelId) {
@@ -549,23 +570,6 @@ function Map() {
         </div>
         <div className={styles.starsTag}>⭐ {data.totalStars}</div>
       </header>
-
-      <nav className={styles.levelTabs}>
-        {LEVELS.map((lvl) => {
-          const locked = data.totalStars < lvl.unlockStars && lvl.id !== 'L1';
-          return (
-            <button
-              key={lvl.id}
-              disabled={locked}
-              onClick={() => switchLevel(lvl.id)}
-              className={`${styles.levelTab} ${lvl.id === levelId ? styles.active : ''} ${locked ? styles.locked : ''}`}
-            >
-              {lvl.name}
-              {locked && ' 🔒'}
-            </button>
-          );
-        })}
-      </nav>
 
       <section className={styles.mapArea}>
         <div className={styles.scrollContainer}>

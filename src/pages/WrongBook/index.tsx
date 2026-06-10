@@ -80,7 +80,7 @@ function WrongBook() {
                   ✕
                 </button>
                 <div className={styles.bigChar}>{it.char}</div>
-                <div className={styles.pinyin}>{it.data?.pinyin}</div>
+                <div className={styles.pinyin}>{it.data?.tonePinyin || it.data?.pinyin}</div>
                 <div className={styles.meaning}>{it.data?.meaning}</div>
                 <div className={styles.smallTag}>复习</div>
               </button>

@@ -109,7 +109,7 @@ function Dashboard() {
             {stats.recent.map((r) => (
               <div key={r.char} className={styles.recentCard}>
                 <div className={styles.recentChar}>{r.char}</div>
-                <div className={styles.recentPinyin}>{r.hanzi?.pinyin ?? ''}</div>
+                <div className={styles.recentPinyin}>{r.hanzi?.tonePinyin ?? r.hanzi?.pinyin ?? ''}</div>
                 <div className={styles.recentStars}>
                   {[1, 2, 3].map((i) => (
                     <span key={i} className={i <= (r.progress?.stars ?? 0) ? styles.on : styles.off}>★</span>

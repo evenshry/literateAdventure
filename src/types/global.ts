@@ -30,6 +30,7 @@ export interface HanziData {
   char: string;
   level: LevelId;
   pinyin: string;
+  tonePinyin?: string; // 带声调符号的拼音，如 "rén" vs "人"
   meaning: string;
   emoji: string;
   examples: string[];
@@ -45,6 +46,7 @@ export interface CharProgress {
   completed: boolean;
   lastStudiedAt?: number;
   recordingUrl?: string;
+  wrongCount: number; // 累计答错次数，达阈值后加入错字本
 }
 
 export interface UserProgress {

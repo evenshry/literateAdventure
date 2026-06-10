@@ -4,14 +4,30 @@
  */
 
 let audioCtx: AudioContext | null = null;
+// 是否已获得用户手势授权（Safari/iOS 要求首次必须由用户手势触发 AudioContext）
+let userGestureActive = false;
 
-function getAudioContext(): AudioContext {
+/**
+ * 注册用户手势（首次交互时调用）
+ * 在 App 根组件的 onClick 处理器中调用即可
+ */
+export function activateAudio() {
+  userGestureActive = true;
+  if (audioCtx?.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+}
+
+function getAudioContext(): AudioContext | null {
+  if (!('AudioContext' in window) && !('webkitAudioContext' in window)) {
+    return null;
+  }
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
   }
-  // Safari 需要在用户交互后 resume
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
+  // Safari/iOS 需要在用户手势后 resume，否则声音被浏览器静音
+  if (audioCtx.state === 'suspended' && userGestureActive) {
+    audioCtx.resume().catch(() => {});
   }
   return audioCtx;
 }
@@ -20,8 +36,9 @@ function getAudioContext(): AudioContext {
  * 播放指定频率的蜂鸣音
  */
 function playTone(frequency: number, duration: number, type: OscillatorType = 'sine', gain = 0.3) {
+  const ctx = getAudioContext();
+  if (!ctx) return;
   try {
-    const ctx = getAudioContext();
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
 
@@ -45,8 +62,9 @@ function playTone(frequency: number, duration: number, type: OscillatorType = 's
  * 正确提示音 - 升调叮咚声
  */
 export function playCorrect() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
   try {
-    const ctx = getAudioContext();
     // 两个音符的和弦
     const freqs = [523.25, 659.25]; // C5, E5
     freqs.forEach((freq, i) => {
@@ -70,8 +88,9 @@ export function playCorrect() {
  * 错误提示音 - 柔和的下行音
  */
 export function playWrong() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
   try {
-    const ctx = getAudioContext();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'triangle';
@@ -92,8 +111,9 @@ export function playWrong() {
  * 完成/奖励音效 - 欢快的上行琶音
  */
 export function playComplete() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
   try {
-    const ctx = getAudioContext();
     // 四个音符的上行琶音
     const notes = [392, 523.25, 659.25, 783.99]; // G4, C5, E5, G5
     notes.forEach((freq, i) => {
@@ -117,8 +137,9 @@ export function playComplete() {
  * 星星获得音效 - 短促清脆
  */
 export function playStar() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
   try {
-    const ctx = getAudioContext();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';

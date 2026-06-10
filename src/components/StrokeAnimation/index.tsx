@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { getHanzi } from '@/data/hanziData';
 import styles from './StrokeAnimation.module.scss';
 
@@ -10,8 +10,19 @@ interface Props {
   strokeColor?: string;
   guideColor?: string;
   strokeWidth?: number;
+  showOutline?: boolean;
+  speed?: number;
 }
 
+/**
+ * 笔顺动画 —— Canvas 版本
+ *
+ * 核心设计：
+ * - 高频 progress 用 ref，不触发 React rerender
+ * - renderFrame 存入 ref，始终调用最新版本（避免闭包捕获旧 state）
+ * - RAF/step 直接调 renderFrameRef.current() 绘制，不走 React rerender
+ * - char/size change effect 不再清理动画（避免误杀正在进行的 setPhase）
+ */
 function StrokeAnimation({
   char,
   size = 300,
@@ -20,324 +31,333 @@ function StrokeAnimation({
   strokeColor = '#1a1a1a',
   guideColor = 'rgba(255, 138, 61, 0.35)',
   strokeWidth = 8,
+  showOutline = true,
+  speed = 1.0,
 }: Props) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const initRef = useRef(false);
+
+  const rafRef = useRef<number | undefined>(undefined);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // 高频动画值
+  const progressRef = useRef(0);
+
+  // UI 状态
   const [phase, setPhase] = useState<'idle' | 'drawing' | 'done'>('idle');
   const [currentStroke, setCurrentStroke] = useState(0);
-  const [strokeProgress, setStrokeProgress] = useState(0);
-  const pathRefs = useRef<(SVGPathElement | null)[]>([]);
-  const rafRef = useRef<number | null>(null);
-  const timeoutsRef = useRef<number[]>([]);
 
-  const strokeData = useMemo(() => getHanzi(char)?.strokes, [char]);
-  const totalStrokes = strokeData?.length || 0;
+  // renderFrame 存入 ref，保证任何时候调用的都是最新版本
+  const renderFrameRef = useRef<(time: number) => void>(() => {});
 
-  useEffect(() => {
-    return () => {
-      cleanup();
-    };
-  }, []);
+  // 预计算笔画
+  const strokes = useMemo(() => {
+    const raw = getHanzi(char)?.strokes;
+    if (!raw) return null;
+    const offsetX = size * 0.12;
+    const offsetY = size * 0.1;
+    const scaleX = size * 0.76;
+    const scaleY = size * 0.8;
+    return raw.map((stroke) =>
+      stroke.map((p) => ({
+        x: (p.x / 100) * scaleX + offsetX,
+        y: (p.y / 100) * scaleY + offsetY,
+      }))
+    );
+  }, [char, size]);
 
-  useEffect(() => {
-    cleanup();
-    setPhase('idle');
-    setCurrentStroke(0);
-    setStrokeProgress(0);
-    pathRefs.current = [];
-  }, [char]);
+  const totalStrokes = strokes?.length ?? 0;
 
-  useEffect(() => {
-    if (autoPlay && phase === 'idle' && strokeData) {
-      const t = window.setTimeout(() => {
-        play();
-      }, 500);
-      timeoutsRef.current.push(t);
+  // ============ 工具函数 ============
+  function clearTimers() {
+    timersRef.current.forEach(clearTimeout);
+    timersRef.current = [];
+  }
+
+  function cancelAnim() {
+    if (rafRef.current !== undefined) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = undefined;
     }
-  }, [autoPlay, phase, strokeData]);
+  }
 
   function cleanup() {
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
+    cancelAnim();
+    clearTimers();
+  }
+
+  function easeInOutCubic(t: number) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  function getClippedStroke(
+    pts: { x: number; y: number }[],
+    progress: number
+  ): { x: number; y: number }[] {
+    if (progress <= 0) return [];
+    if (progress >= 1) return pts;
+    let total = 0;
+    const segLens: number[] = [0];
+    for (let i = 1; i < pts.length; i++) {
+      const dx = pts[i].x - pts[i - 1].x;
+      const dy = pts[i].y - pts[i - 1].y;
+      total += Math.sqrt(dx * dx + dy * dy);
+      segLens.push(total);
     }
-    timeoutsRef.current.forEach(t => clearTimeout(t));
-    timeoutsRef.current = [];
+    if (total === 0) return [pts[0]];
+    const target = total * progress;
+    for (let i = 1; i < segLens.length; i++) {
+      if (segLens[i] >= target) {
+        const seg = segLens[i] - segLens[i - 1];
+        const t = seg === 0 ? 1 : (target - segLens[i - 1]) / seg;
+        return [
+          ...pts.slice(0, i),
+          {
+            x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * t,
+            y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * t,
+          },
+        ];
+      }
+    }
+    return pts;
   }
 
-  function play() {
-    cleanup();
-    setPhase('drawing');
-    setCurrentStroke(0);
-    setStrokeProgress(0);
-    const t = window.setTimeout(() => animateStroke(0), 200);
-    timeoutsRef.current.push(t);
+  // ============ 绘制函数 ============
+  function drawGrid(ctx: CanvasRenderingContext2D) {
+    if (!showOutline) return;
+    ctx.fillStyle = '#fff8e7';
+    ctx.fillRect(size * 0.04, size * 0.04, size * 0.92, size * 0.92);
+    ctx.strokeStyle = '#e5d4a8';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(size * 0.04, size * 0.04, size * 0.92, size * 0.92);
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = 'rgba(200, 150, 80, 0.25)';
+    ctx.beginPath();
+    ctx.moveTo(size * 0.04, size / 2);
+    ctx.lineTo(size * 0.96, size / 2);
+    ctx.moveTo(size / 2, size * 0.04);
+    ctx.lineTo(size / 2, size * 0.96);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(200, 150, 80, 0.15)';
+    ctx.beginPath();
+    ctx.moveTo(size * 0.04, size * 0.04);
+    ctx.lineTo(size * 0.96, size * 0.96);
+    ctx.moveTo(size * 0.96, size * 0.04);
+    ctx.lineTo(size * 0.04, size * 0.96);
+    ctx.stroke();
+    ctx.setLineDash([]);
   }
 
+  function drawChar(ctx: CanvasRenderingContext2D, color: string, alpha = 1) {
+    ctx.save();
+    ctx.font = `${Math.floor(size * 0.7)}px "KaiTi", "STKaiti", "楷体", "PingFang SC", serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = color;
+    ctx.globalAlpha = alpha;
+    ctx.fillText(char, size / 2, size / 2 + size * 0.02);
+    ctx.restore();
+  }
+
+  function drawStroke(
+    ctx: CanvasRenderingContext2D,
+    pts: { x: number; y: number }[],
+    color: string,
+    width: number
+  ) {
+    if (pts.length < 2) return;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawBrushTip(
+    ctx: CanvasRenderingContext2D,
+    pts: { x: number; y: number }[],
+    progress: number,
+    time: number
+  ) {
+    if (progress <= 0 || progress >= 1 || pts.length < 2) return;
+    const clipped = getClippedStroke(pts, progress);
+    if (clipped.length === 0) return;
+    const tip = clipped[clipped.length - 1];
+    const pulse = 1 + 0.15 * Math.sin(time * 0.01);
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 87, 34, 0.28)';
+    ctx.beginPath();
+    ctx.arc(tip.x, tip.y, strokeWidth * 1.8 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ff5722';
+    ctx.beginPath();
+    ctx.arc(tip.x, tip.y, strokeWidth * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // 渲染一帧
+  const renderFrame = useCallback(
+    (time: number) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      ctx.clearRect(0, 0, size, size);
+      drawGrid(ctx);
+      drawChar(ctx, 'rgba(180, 120, 60, 0.18)', 1);
+
+      if (strokes) {
+        strokes.forEach((stroke) => {
+          drawStroke(ctx, stroke, 'rgba(180, 180, 180, 0.35)', strokeWidth + 2);
+        });
+
+        for (let i = 0; i < currentStroke; i++) {
+          drawStroke(ctx, strokes[i], strokeColor, strokeWidth);
+        }
+
+        if (phase === 'drawing' && currentStroke < totalStrokes) {
+          const clipped = getClippedStroke(strokes[currentStroke], progressRef.current);
+          drawStroke(ctx, clipped, strokeColor, strokeWidth);
+          drawBrushTip(ctx, strokes[currentStroke], progressRef.current, time);
+        }
+      } else {
+        drawChar(ctx, phase === 'idle' ? guideColor : strokeColor, phase === 'idle' ? 0.5 : 1);
+      }
+
+      const drawn = phase === 'drawing' ? progressRef.current : phase === 'done' ? 1 : 0;
+      const overall =
+        totalStrokes > 0
+          ? (currentStroke + drawn) / totalStrokes
+          : phase === 'done'
+          ? 1
+          : 0;
+      ctx.save();
+      ctx.fillStyle = 'rgba(200, 150, 80, 0.2)';
+      ctx.fillRect(size / 2 - 60, size * 0.92, 120, 6);
+      ctx.fillStyle = '#d4a574';
+      ctx.fillRect(
+        size / 2 - 60,
+        size * 0.92,
+        120 * Math.max(0, Math.min(1, overall)),
+        6
+      );
+      ctx.restore();
+    },
+    [strokes, currentStroke, phase, totalStrokes, char, size, strokeColor, guideColor, strokeWidth]
+  );
+
+  // 始终保持 renderFrameRef 指向最新版本
+  renderFrameRef.current = renderFrame;
+
+  // ============ 动画控制 ============
   function animateStroke(index: number) {
-    if (!strokeData || index >= totalStrokes) {
+    if (!strokes || index >= totalStrokes) {
       setPhase('done');
       onComplete?.();
+      // 用 RAF 而非 setTimeout，确保调用时 phase 已是 'done'
+      rafRef.current = requestAnimationFrame(() => renderFrameRef.current(0));
       return;
     }
-
     setCurrentStroke(index);
-    const duration = 700 + Math.random() * 200;
+    progressRef.current = 0;
+
+    const duration = (700 + Math.random() * 200) / speed;
     const startTime = performance.now();
 
     function step(now: number) {
       const elapsed = now - startTime;
       const t = Math.min(elapsed / duration, 1);
-      const eased = easeInOutCubic(t);
-      setStrokeProgress(eased);
+      progressRef.current = easeInOutCubic(t);
+      renderFrameRef.current(now);
 
       if (t < 1) {
         rafRef.current = requestAnimationFrame(step);
       } else {
-        const nextIdx = index + 1;
-        const pause = nextIdx < totalStrokes ? 180 + Math.random() * 120 : 0;
-        const timeoutId = window.setTimeout(() => {
-          if (nextIdx < totalStrokes) {
-            animateStroke(nextIdx);
-          } else {
-            setPhase('done');
-            onComplete?.();
-          }
-        }, pause);
-        timeoutsRef.current.push(timeoutId);
+        rafRef.current = undefined;
+        const next = index + 1;
+        if (next < totalStrokes) {
+          const tid = setTimeout(() => animateStroke(next), (180 + Math.random() * 120) / speed);
+          timersRef.current.push(tid);
+        } else {
+          setPhase('done');
+          onComplete?.();
+          rafRef.current = requestAnimationFrame(() => renderFrameRef.current(0));
+        }
       }
     }
 
     rafRef.current = requestAnimationFrame(step);
   }
 
-  function easeInOutCubic(t: number): number {
-    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  function play() {
+    cleanup();
+    setPhase('drawing');
+    setCurrentStroke(0);
+    progressRef.current = 0;
+    const tid = setTimeout(() => animateStroke(0), 200);
+    timersRef.current.push(tid);
   }
 
-  function reset() {
+  // ============ 生命周期 ============
+  // 初始化 canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || initRef.current) return;
+    initRef.current = true;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    const ctx = canvas.getContext('2d');
+    if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    renderFrameRef.current(0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 字切换：重设 canvas + 画初始帧（不杀 RAF，因为字变了动画本来就要停）
+  useEffect(() => {
+    if (!initRef.current) return; // 首次由 init effect 处理
     cleanup();
     setPhase('idle');
     setCurrentStroke(0);
-    setStrokeProgress(0);
-  }
+    progressRef.current = 0;
+    const tid = setTimeout(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = size * dpr;
+      canvas.height = size * dpr;
+      const ctx = canvas.getContext('2d');
+      if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      renderFrameRef.current(0);
+    }, 0);
+    timersRef.current.push(tid);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [char, size]);
 
-  const overallProgress = totalStrokes > 0
-    ? (currentStroke + strokeProgress) / totalStrokes
-    : (phase === 'idle' ? 0 : phase === 'done' ? 1 : 0);
-
-  function getStrokePath(stroke: { x: number; y: number }[]): string {
-    if (stroke.length < 2) return '';
-    const offsetX = size * 0.12;
-    const offsetY = size * 0.1;
-    const scaleX = size * 0.76;
-    const scaleY = size * 0.8;
-
-    if (stroke.length === 2) {
-      const p1 = stroke[0];
-      const p2 = stroke[1];
-      const mx = (p1.x + p2.x) / 2 + (Math.random() - 0.5) * 2;
-      const my = (p1.y + p2.y) / 2 + (Math.random() - 0.5) * 2;
-      return `M ${(p1.x / 100) * scaleX + offsetX},${(p1.y / 100) * scaleY + offsetY} Q ${(mx / 100) * scaleX + offsetX},${(my / 100) * scaleY + offsetY} ${(p2.x / 100) * scaleX + offsetX},${(p2.y / 100) * scaleY + offsetY}`;
+  // autoPlay
+  useEffect(() => {
+    if (autoPlay && phase === 'idle' && strokes) {
+      const tid = setTimeout(() => play(), 500);
+      timersRef.current.push(tid);
     }
-
-    let d = `M ${(stroke[0].x / 100) * scaleX + offsetX},${(stroke[0].y / 100) * scaleY + offsetY}`;
-    for (let i = 1; i < stroke.length - 1; i++) {
-      const prev = stroke[i - 1];
-      const curr = stroke[i];
-      const next = stroke[i + 1];
-      const cx1 = (prev.x + curr.x) / 2;
-      const cy1 = (prev.y + curr.y) / 2;
-      const cx2 = (curr.x + next.x) / 2;
-      const cy2 = (curr.y + next.y) / 2;
-      d += ` Q ${(cx1 / 100) * scaleX + offsetX},${(cy1 / 100) * scaleY + offsetY} ${(curr.x / 100) * scaleX + offsetX},${(curr.y / 100) * scaleY + offsetY}`;
-      if (i === stroke.length - 2) {
-        d += ` Q ${(cx2 / 100) * scaleX + offsetX},${(cy2 / 100) * scaleY + offsetY} ${(next.x / 100) * scaleX + offsetX},${(next.y / 100) * scaleY + offsetY}`;
-      }
-    }
-    return d;
-  }
-
-  function getCurrentPoint(): { x: number; y: number } | null {
-    if (!strokeData || currentStroke >= totalStrokes) return null;
-    const stroke = strokeData[currentStroke];
-    if (!stroke || stroke.length < 2) return null;
-
-    const offsetX = size * 0.12;
-    const offsetY = size * 0.1;
-    const scaleX = size * 0.76;
-    const scaleY = size * 0.8;
-
-    const totalSegments = stroke.length - 1;
-    const segmentFloat = strokeProgress * totalSegments;
-    const segmentIdx = Math.min(Math.floor(segmentFloat), totalSegments - 1);
-    const localT = segmentFloat - segmentIdx;
-
-    const p1 = stroke[segmentIdx];
-    const p2 = stroke[Math.min(segmentIdx + 1, stroke.length - 1)];
-
-    return {
-      x: (p1.x + (p2.x - p1.x) * localT) / 100 * scaleX + offsetX,
-      y: (p1.y + (p2.y - p1.y) * localT) / 100 * scaleY + offsetY,
-    };
-  }
-
-  const currentPoint = phase === 'drawing' ? getCurrentPoint() : null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoPlay, phase, strokes]);
 
   return (
     <div className={styles.container} style={{ width: size, height: size }}>
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        className={styles.svg}
-      >
-        <defs>
-          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" />
-            <feOffset dx="1" dy="1" result="offsetblur" />
-            <feComponentTransfer>
-              <feFuncA type="linear" slope="0.25" />
-            </feComponentTransfer>
-            <feMerge>
-              <feMergeNode />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-
-        <rect
-          x={size * 0.04}
-          y={size * 0.04}
-          width={size * 0.92}
-          height={size * 0.92}
-          fill="#fff8e7"
-          stroke="#e5d4a8"
-          strokeWidth={2}
-          rx={8}
-        />
-
-        <line x1={size * 0.04} y1={size / 2} x2={size * 0.96} y2={size / 2} stroke="rgba(200, 150, 80, 0.25)" strokeWidth={1} strokeDasharray="4 4" />
-        <line x1={size / 2} y1={size * 0.04} x2={size / 2} y2={size * 0.96} stroke="rgba(200, 150, 80, 0.25)" strokeWidth={1} strokeDasharray="4 4" />
-        <line x1={size * 0.04} y1={size * 0.04} x2={size * 0.96} y2={size * 0.96} stroke="rgba(200, 150, 80, 0.15)" strokeWidth={1} strokeDasharray="4 4" />
-        <line x1={size * 0.96} y1={size * 0.04} x2={size * 0.04} y2={size * 0.96} stroke="rgba(200, 150, 80, 0.15)" strokeWidth={1} strokeDasharray="4 4" />
-
-        <text
-          x={size / 2}
-          y={size / 2 + size * 0.02}
-          style={{
-            fontSize: size * 0.7,
-            fontFamily: '"KaiTi", "STKaiti", "楷体", "PingFang SC", serif',
-            fontWeight: 400,
-            dominantBaseline: 'central',
-            textAnchor: 'middle',
-            fill: 'rgba(180, 120, 60, 0.18)',
-            userSelect: 'none',
-            pointerEvents: 'none',
-          }}
-        >
-          {char}
-        </text>
-
-        {strokeData && strokeData.map((stroke, index) => {
-          const isDrawn = index < currentStroke;
-          const isDrawing = index === currentStroke && phase === 'drawing';
-          const path = getStrokePath(stroke);
-          const pathEl = pathRefs.current[index];
-          const length = pathEl?.getTotalLength() || 300;
-
-          if (!path) return null;
-
-          return (
-            <g key={index} filter="url(#shadow)">
-              <path
-                d={path}
-                fill="none"
-                stroke="rgba(180, 180, 180, 0.35)"
-                strokeWidth={strokeWidth + 2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-
-              {(isDrawn || isDrawing) && (
-                <path
-                  ref={(el) => { pathRefs.current[index] = el; }}
-                  d={path}
-                  fill="none"
-                  stroke={strokeColor}
-                  strokeWidth={strokeWidth}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeDasharray={isDrawing ? `${length * strokeProgress} ${length}` : 'none'}
-                  style={{
-                    transition: isDrawing ? 'none' : 'stroke-dasharray 0.15s ease',
-                  }}
-                />
-              )}
-            </g>
-          );
-        })}
-
-        {currentPoint && (
-          <>
-            <circle
-              cx={currentPoint.x}
-              cy={currentPoint.y}
-              r={strokeWidth * 1.8}
-              fill="#ff5722"
-              opacity={0.25}
-            >
-              <animate attributeName="r" values={`${strokeWidth * 1.5};${strokeWidth * 2.2};${strokeWidth * 1.5}`} dur="0.6s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.35;0.15;0.35" dur="0.6s" repeatCount="indefinite" />
-            </circle>
-            <circle
-              cx={currentPoint.x}
-              cy={currentPoint.y}
-              r={strokeWidth * 0.6}
-              fill="#ff5722"
-            />
-          </>
-        )}
-
-        {!strokeData && (
-          <text
-            x={size / 2}
-            y={size / 2 + size * 0.02}
-            style={{
-              fontSize: size * 0.7,
-              fontFamily: '"KaiTi", "STKaiti", "楷体", "PingFang SC", serif',
-              fontWeight: 400,
-              dominantBaseline: 'central',
-              textAnchor: 'middle',
-              fill: phase === 'idle' ? guideColor : strokeColor,
-              opacity: phase === 'idle' ? 0.4 : 1,
-              transition: 'opacity 0.3s ease',
-              userSelect: 'none',
-              pointerEvents: 'none',
-            }}
-          >
-            {char}
-          </text>
-        )}
-
-        <g>
-          <rect
-            x={size / 2 - 60}
-            y={size * 0.92}
-            width={120}
-            height={6}
-            rx={3}
-            fill="rgba(200, 150, 80, 0.2)"
-          />
-          <rect
-            x={size / 2 - 60}
-            y={size * 0.92}
-            width={120 * overallProgress}
-            height={6}
-            rx={3}
-            fill="#d4a574"
-            style={{ transition: 'width 0.1s linear' }}
-          />
-        </g>
-      </svg>
+      <canvas
+        ref={canvasRef}
+        className={styles.canvas}
+        style={{ width: size, height: size }}
+      />
 
       <div className={styles.controls}>
         {phase === 'idle' && (
@@ -352,11 +372,14 @@ function StrokeAnimation({
         )}
       </div>
 
-      {strokeData && (
+      {strokes && (
         <div className={styles.strokeInfo}>
-          <span>
-            第 {currentStroke + (phase === 'drawing' && strokeProgress > 0 ? 1 : 0)} 笔 / 共 {totalStrokes} 笔
-          </span>
+          <div  className={styles.strokeInfoText}>
+            第{' '}
+            {currentStroke +
+              (phase === 'drawing' && progressRef.current > 0 ? 1 : 0)}{' '}
+            笔 / 共 {totalStrokes} 笔
+          </div>
         </div>
       )}
     </div>

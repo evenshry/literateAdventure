@@ -85,6 +85,40 @@
   strong { color: #ff8a3d; font-size: 22px; margin: 0 4px; }
 }
 
+.expectedHint {
+  font-size: 13px;
+  color: #888;
+  margin-left: 6px;
+}
+
+.assessment {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 15px;
+  margin-bottom: 10px;
+
+  &.assessmentGreat {
+    background: #e8f5e0;
+    color: #1f6b40;
+    border: 2px solid #2d8b57;
+  }
+
+  &.assessmentOk {
+    background: #fff9e6;
+    color: #b85700;
+    border: 2px solid #ff8a3d;
+  }
+
+  &.assessmentPoor {
+    background: #fff0f0;
+    color: #c0392b;
+    border: 2px solid #e74c3c;
+  }
+}
+
 .actions {
   display: flex;
   justify-content: center;

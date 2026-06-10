@@ -1,11 +1,10 @@
 /**
- * StepPractice 组件类型定义
+ * 步骤组件共享 Props 类型
  */
-
-import type { HanziData } from '@/types/global';
-
-export interface StepPracticeProps {
-  hanzi: HanziData;
-  completed: boolean;
-  onComplete: () => void;
-}
+export type {
+  StepProps,
+  StepRecognizeProps,
+  StepWriteProps,
+  StepPracticeProps,
+  StepReadProps,
+} from '../StepRecognize/types';

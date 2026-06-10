@@ -90,7 +90,7 @@ function Learn() {
             {hanzi.char}
           </button>
           <div className={styles.charMeta}>
-            <div className={styles.pinyin}>{hanzi.pinyin}</div>
+            <div className={styles.pinyin}>{hanzi.tonePinyin || hanzi.pinyin}</div>
             <div className={styles.meaning}>{hanzi.meaning}</div>
           </div>
         </div>

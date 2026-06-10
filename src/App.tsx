@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import AppRouter from '@/routes';
 import { useProgressStore } from '@/store/progressStore';
+import { activateAudio } from '@/utils/sound';
 
 function App() {
   const { init, ready } = useProgressStore();
@@ -8,6 +9,21 @@ function App() {
   useEffect(() => {
     void init();
   }, [init]);
+
+  // 首次用户交互时激活音频系统（Safari/iOS 要求）
+  useEffect(() => {
+    function onFirstTouch() {
+      activateAudio();
+      document.removeEventListener('click', onFirstTouch);
+      document.removeEventListener('touchstart', onFirstTouch);
+    }
+    document.addEventListener('click', onFirstTouch, { once: true });
+    document.addEventListener('touchstart', onFirstTouch, { once: true });
+    return () => {
+      document.removeEventListener('click', onFirstTouch);
+      document.removeEventListener('touchstart', onFirstTouch);
+    };
+  }, []);
 
   if (!ready) {
     return (

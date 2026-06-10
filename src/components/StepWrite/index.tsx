@@ -6,6 +6,15 @@ import styles from './StepWrite.module.scss';
 
 type Mode = 'trace' | 'free';
 
+type Assessment = 'none' | 'great' | 'ok' | 'poor';
+
+function getAssessment(userStrokes: number, expectedStrokes: number): Assessment {
+  if (expectedStrokes <= 0) return 'none';
+  if (userStrokes >= expectedStrokes) return 'great';
+  if (userStrokes >= expectedStrokes - 1) return 'ok';
+  return 'poor';
+}
+
 function StepWrite({ hanzi, completed, onComplete }: StepWriteProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -15,7 +24,10 @@ function StepWrite({ hanzi, completed, onComplete }: StepWriteProps) {
   const [mode, setMode] = useState<Mode>('trace');
   const [done, setDone] = useState(completed);
   const [strokeCount, setStrokeCount] = useState(0);
-  const { playCorrect, playClick } = useSound();
+  const [assessment, setAssessment] = useState<Assessment>('none');
+  const { playCorrect, playClick, playWrong } = useSound();
+
+  const expectedStrokes = hanzi.strokes?.length ?? 0;
 
   function drawGuide(ctx: CanvasRenderingContext2D, w: number, h: number, showChar: boolean) {
     ctx.clearRect(0, 0, w, h);
@@ -85,6 +97,7 @@ function StepWrite({ hanzi, completed, onComplete }: StepWriteProps) {
     pathsRef.current = [];
     currentStroke.current = [];
     setStrokeCount(0);
+    setAssessment('none');
     redraw();
   }, [mode]);
 
@@ -120,6 +133,7 @@ function StepWrite({ hanzi, completed, onComplete }: StepWriteProps) {
     if (currentStroke.current.length > 2) {
       pathsRef.current.push(currentStroke.current);
       setStrokeCount(pathsRef.current.length);
+      setAssessment(getAssessment(pathsRef.current.length, expectedStrokes));
     }
     currentStroke.current = [];
     redraw();
@@ -129,6 +143,7 @@ function StepWrite({ hanzi, completed, onComplete }: StepWriteProps) {
     pathsRef.current = [];
     currentStroke.current = [];
     setStrokeCount(0);
+    setAssessment('none');
     redraw();
   }
 
@@ -137,10 +152,34 @@ function StepWrite({ hanzi, completed, onComplete }: StepWriteProps) {
       void speak('请先写一写！', { rate: 0.9 });
       return;
     }
-    playCorrect();
-    setDone(true);
-    onComplete();
+
+    const result = getAssessment(pathsRef.current.length, expectedStrokes);
+    setAssessment(result);
+
+    if (result === 'great') {
+      playCorrect();
+      void speak('太棒了，笔画完整！', { rate: 0.9 });
+      setDone(true);
+      onComplete();
+    } else if (result === 'ok') {
+      playCorrect();
+      void speak('写得不错，注意笔画顺序哦！', { rate: 0.9 });
+      setDone(true);
+      onComplete();
+    } else {
+      playWrong();
+      void speak('注意笔画数哦，再试试！', { rate: 0.9 });
+    }
   }
+
+  function getAssessmentText(): { text: string; icon: string; cls: string } | null {
+    if (assessment === 'none' || done) return null;
+    if (assessment === 'great') return { text: '笔画完整 ✓', icon: '🌟', cls: styles.assessmentGreat };
+    if (assessment === 'ok') return { text: '基本正确 ✓', icon: '👍', cls: styles.assessmentOk };
+    return { text: `笔画偏少 (${strokeCount}/${expectedStrokes})`, icon: '💡', cls: styles.assessmentPoor };
+  }
+
+  const assessmentInfo = getAssessmentText();
 
   return (
     <div className={styles.card}>
@@ -181,7 +220,15 @@ function StepWrite({ hanzi, completed, onComplete }: StepWriteProps) {
 
       <div className={styles.stats}>
         已写 <strong>{strokeCount}</strong> 笔
+        {expectedStrokes > 0 && <span className={styles.expectedHint}>（目标 {expectedStrokes} 笔）</span>}
       </div>
+
+      {assessmentInfo && (
+        <div className={`${styles.assessment} ${assessmentInfo.cls}`}>
+          <span>{assessmentInfo.icon}</span>
+          <span>{assessmentInfo.text}</span>
+        </div>
+      )}
 
       <div className={styles.actions}>
         <button className={styles.ghostBtn} onClick={clearCanvas}>🧹 清空重来</button>
