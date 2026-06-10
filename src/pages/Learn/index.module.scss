@@ -1,5 +1,4 @@
 .learnPage {
-  min-height: 100vh;
   background: linear-gradient(180deg, #fff5d6, #fef9ec 50%, #e8f5e0);
   padding-bottom: 48px;
   position: relative;
@@ -173,7 +172,6 @@
 }
 
 .fallback {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
