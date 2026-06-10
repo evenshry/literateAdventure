@@ -13,6 +13,7 @@ interface ProgressState {
   removeFromWrongList: (char: string) => void;
   resetAll: () => Promise<void>;
   toggleSound: () => void;
+  toggleAudioFeedback: () => void;
   _persist: (data: UserProgress) => Promise<void>;
 }
 
@@ -24,7 +25,7 @@ function freshProgress(): UserProgress {
     learnedChars: [],
     charProgress: {},
     wrongList: [],
-    settings: { soundEnabled: true, voiceType: 'female' },
+    settings: { soundEnabled: true, voiceType: 'female', musicEnabled: true, audioFeedback: true },
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
@@ -146,6 +147,16 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
     const nextData: UserProgress = {
       ...state.data,
       settings: { ...state.data.settings, soundEnabled: !state.data.settings.soundEnabled },
+    };
+    set({ data: nextData });
+    void state._persist(nextData);
+  },
+
+  toggleAudioFeedback() {
+    const state = get();
+    const nextData: UserProgress = {
+      ...state.data,
+      settings: { ...state.data.settings, audioFeedback: !state.data.settings.audioFeedback },
     };
     set({ data: nextData });
     void state._persist(nextData);

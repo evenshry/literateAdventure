@@ -1,13 +1,9 @@
 import { useMemo, useState } from 'react';
-import type { HanziData } from '@/types/global';
 import { speak } from '@/utils/speech';
+import { useSound } from '@/hooks/useSound';
+import type { StepPracticeProps } from './StepPractice/types';
+import type { HanziData } from '@/types/global';
 import styles from './StepPractice.module.scss';
-
-interface Props {
-  hanzi: HanziData;
-  completed: boolean;
-  onComplete: () => void;
-}
 
 type GameType = 'match' | 'fill' | 'puzzle';
 
@@ -77,13 +73,14 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-function StepPractice({ hanzi, completed, onComplete }: Props) {
+function StepPractice({ hanzi, completed, onComplete }: StepPracticeProps) {
   const questions = useMemo(() => buildQuestions(hanzi), [hanzi]);
   const [idx, setIdx] = useState(0);
   const [score, setScore] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
   const [shake, setShake] = useState(false);
   const [finished, setFinished] = useState(completed);
+  const { playCorrect, playWrong, playComplete } = useSound();
 
   const needCorrect = 3;
   const q = questions[idx % questions.length];
@@ -92,11 +89,13 @@ function StepPractice({ hanzi, completed, onComplete }: Props) {
     if (picked) return;
     setPicked(option);
     if (option === q.answer) {
+      playCorrect();
       const nextScore = score + 1;
       setScore(nextScore);
       void speak('答对啦！', { rate: 1.1 });
       setTimeout(() => {
         if (nextScore >= needCorrect) {
+          playComplete();
           setFinished(true);
           onComplete();
         } else {
@@ -105,6 +104,7 @@ function StepPractice({ hanzi, completed, onComplete }: Props) {
         }
       }, 900);
     } else {
+      playWrong();
       setShake(true);
       void speak('再试试！', { rate: 1.1 });
       setTimeout(() => setShake(false), 500);

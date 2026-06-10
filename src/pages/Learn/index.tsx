@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getHanzi } from '@/data/hanziData';
 import { useProgressStore } from '@/store/progressStore';
 import { speak } from '@/utils/speech';
+import { useSound } from '@/hooks/useSound';
 import type { StepId } from '@/types/global';
 import StepRecognize from '@components/StepRecognize';
 import StepWrite from '@components/StepWrite';
@@ -23,6 +24,7 @@ function Learn() {
   const navigate = useNavigate();
   const hanzi = useMemo(() => (char ? getHanzi(char) : undefined), [char]);
   const { data, markStepComplete, awardStarsForChar } = useProgressStore();
+  const { playCorrect, playStar, playComplete } = useSound();
 
   const [currentStep, setCurrentStep] = useState<StepId>('recognize');
   const [celebrate, setCelebrate] = useState<{ stars: number } | null>(null);
@@ -54,6 +56,7 @@ function Learn() {
   const allDone = cp?.completed ?? false;
 
   function onStepDone(stepId: StepId) {
+    playCorrect();
     markStepComplete(currentChar, stepId);
     void speak('真棒！', { rate: 1.0 });
     const idx = STEPS.findIndex((s) => s.id === stepId);
@@ -61,6 +64,8 @@ function Learn() {
       setTimeout(() => setCurrentStep(STEPS[idx + 1].id), 800);
     } else {
       awardStarsForChar(currentChar, 3);
+      playStar();
+      playComplete();
       setCelebrate({ stars: 3 });
       setTimeout(() => {
         setCelebrate(null);

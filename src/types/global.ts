@@ -57,6 +57,8 @@ export interface UserProgress {
   settings: {
     soundEnabled: boolean;
     voiceType: 'male' | 'female';
+    musicEnabled: boolean;
+    audioFeedback: boolean;
   };
   createdAt: number;
   updatedAt: number;

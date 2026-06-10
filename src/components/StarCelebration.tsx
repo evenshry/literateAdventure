@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { playComplete, playStar } from '@/utils/sound';
 import styles from './StarCelebration.module.scss';
 
 interface Props {
@@ -19,8 +20,12 @@ function StarCelebration({ stars }: Props) {
   );
 
   useEffect(() => {
-    return () => {};
-  }, []);
+    playComplete();
+    // 逐个播放星星音效
+    for (let i = 0; i < stars; i++) {
+      setTimeout(() => playStar(), i * 250 + 500);
+    }
+  }, [stars]);
 
   return (
     <div className={styles.overlay}>

@@ -1,21 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import type { HanziData } from '@/types/global';
 import { speak } from '@/utils/speech';
+import { useSound } from '@/hooks/useSound';
+import type { StepReadProps } from './StepRead/types';
 import styles from './StepRead.module.scss';
 
-interface Props {
-  hanzi: HanziData;
-  completed: boolean;
-  onComplete: () => void;
-}
-
-function StepRead({ hanzi, completed, onComplete }: Props) {
+function StepRead({ hanzi, completed, onComplete }: StepReadProps) {
   const [recording, setRecording] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(completed);
   const [micSupported, setMicSupported] = useState(true);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
+  const { playCorrect, playClick } = useSound();
 
   useEffect(() => {
     if (!navigator.mediaDevices || !window.MediaRecorder) {
@@ -63,11 +59,13 @@ function StepRead({ hanzi, completed, onComplete }: Props) {
   }
 
   function toggleRecord() {
+    playClick();
     if (recording) stopRecord();
     else startRecord();
   }
 
   function confirmRead() {
+    playCorrect();
     setConfirmed(true);
     onComplete();
   }

@@ -1,17 +1,13 @@
 import { useState } from 'react';
-import type { HanziData } from '@/types/global';
 import { speak } from '@/utils/speech';
+import { useSound } from '@/hooks/useSound';
+import StrokeAnimation from '@/components/StrokeAnimation';
+import type { StepRecognizeProps } from './StepRecognize/types';
 import styles from './StepRecognize.module.scss';
 
-interface Props {
-  hanzi: HanziData;
-  completed: boolean;
-  onComplete: () => void;
-}
-
-function StepRecognize({ hanzi, completed, onComplete }: Props) {
+function StepRecognize({ hanzi, completed, onComplete }: StepRecognizeProps) {
   const [watched, setWatched] = useState(completed);
-  const [animating, setAnimating] = useState(false);
+  const { playClick, playSelect } = useSound();
 
   function playPronunciation() {
     void speak(hanzi.char, { rate: 0.65, pitch: 1.2 });
@@ -21,13 +17,8 @@ function StepRecognize({ hanzi, completed, onComplete }: Props) {
     void speak(`${hanzi.char}。${hanzi.meaning}。${hanzi.examples.join('，')}。`, { rate: 0.8 });
   }
 
-  function doStrokeAnim() {
-    if (animating) return;
-    setAnimating(true);
-    setTimeout(() => setAnimating(false), 1800);
-  }
-
   function confirm() {
+    playSelect();
     setWatched(true);
     onComplete();
   }
@@ -38,13 +29,11 @@ function StepRecognize({ hanzi, completed, onComplete }: Props) {
 
       <section className={styles.topRow}>
         <div className={styles.charBox}>
-          <div className={`${styles.hanzi} ${animating ? styles.drawing : ''}`}>
-            {hanzi.char}
-          </div>
-          <div className={styles.gridLines} />
-          <button className={styles.strokeBtn} onClick={doStrokeAnim} disabled={animating}>
-            ✏️ 看笔顺
-          </button>
+          <StrokeAnimation
+            char={hanzi.char}
+            size={200}
+            autoPlay={false}
+          />
         </div>
 
         <div className={styles.meanBox}>

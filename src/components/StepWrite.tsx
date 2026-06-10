@@ -1,17 +1,12 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
-import type { HanziData } from '@/types/global';
 import { speak } from '@/utils/speech';
+import { useSound } from '@/hooks/useSound';
+import type { StepWriteProps } from './StepWrite/types';
 import styles from './StepWrite.module.scss';
-
-interface Props {
-  hanzi: HanziData;
-  completed: boolean;
-  onComplete: () => void;
-}
 
 type Mode = 'trace' | 'free';
 
-function StepWrite({ hanzi, completed, onComplete }: Props) {
+function StepWrite({ hanzi, completed, onComplete }: StepWriteProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const drawing = useRef(false);
@@ -20,6 +15,7 @@ function StepWrite({ hanzi, completed, onComplete }: Props) {
   const [mode, setMode] = useState<Mode>('trace');
   const [done, setDone] = useState(completed);
   const [strokeCount, setStrokeCount] = useState(0);
+  const { playCorrect, playClick } = useSound();
 
   function drawGuide(ctx: CanvasRenderingContext2D, w: number, h: number, showChar: boolean) {
     ctx.clearRect(0, 0, w, h);
@@ -141,6 +137,7 @@ function StepWrite({ hanzi, completed, onComplete }: Props) {
       void speak('请先写一写！', { rate: 0.9 });
       return;
     }
+    playCorrect();
     setDone(true);
     onComplete();
   }
@@ -152,13 +149,13 @@ function StepWrite({ hanzi, completed, onComplete }: Props) {
       <div className={styles.modeTabs}>
         <button
           className={`${styles.modeBtn} ${mode === 'trace' ? styles.active : ''}`}
-          onClick={() => setMode('trace')}
+          onClick={() => { playClick(); setMode('trace'); }}
         >
           描红模式
         </button>
         <button
           className={`${styles.modeBtn} ${mode === 'free' ? styles.active : ''}`}
-          onClick={() => setMode('free')}
+          onClick={() => { playClick(); setMode('free'); }}
         >
           自由书写
         </button>
