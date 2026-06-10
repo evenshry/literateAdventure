@@ -4,6 +4,7 @@ import { getHanzi } from '@/data/hanziData';
 import { useProgressStore } from '@/store/progressStore';
 import { speak } from '@/utils/speech';
 import { useSound } from '@/hooks/useSound';
+import { ROUTES } from '@/routes';
 import type { StepId } from '@/types/global';
 import StepRecognize from '@components/StepRecognize';
 import StepWrite from '@components/StepWrite';
@@ -155,7 +156,7 @@ function Learn() {
       {allDone && !celebrate && (
         <div className={styles.allDoneBanner}>
           🎉 这个字已经全部学会啦！回地图继续冒险吧～
-          <button className={styles.btnPrimary} onClick={() => navigate(`/map/${data.currentLevel}`)}>
+          <button className={styles.btnPrimary} onClick={() => navigate(ROUTES.MAP_LEVEL(data.currentLevel))}>
             回地图
           </button>
         </div>

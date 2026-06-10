@@ -1,8 +1,10 @@
-import type { LevelInfo, HanziData, LevelId } from '@/types/global';
+import type { LevelInfo, HanziData, LevelId, StrokePoint } from '@/types/global';
 import { L1_DATA, L1_CHARS } from './levels/L1';
 import { L2_DATA, L2_CHARS } from './levels/L2';
 import { L3_DATA, L3_CHARS } from './levels/L3';
 import { L4_DATA, L4_CHARS } from './levels/L4';
+import { STROKES } from './strokeData';
+import { getTonePinyin } from '@/utils/pinyin';
 
 export const LEVELS: LevelInfo[] = [
   {
@@ -35,7 +37,14 @@ export const LEVELS: LevelInfo[] = [
   },
 ];
 
-const ALL_DATA = [...L1_DATA, ...L2_DATA, ...L3_DATA, ...L4_DATA];
+/** 将字库数据与笔顺数据合并，每条 HanziData 都内嵌 strokes 和 tonePinyin 字段 */
+const ALL_DATA: HanziData[] = [...L1_DATA, ...L2_DATA, ...L3_DATA, ...L4_DATA].map(
+  (hanzi): HanziData => ({
+    ...hanzi,
+    tonePinyin: getTonePinyin(hanzi.char),
+    strokes: STROKES[hanzi.char],
+  })
+);
 
 export const HANZI_DB: Record<string, HanziData> = ALL_DATA.reduce((acc, hanzi) => {
   acc[hanzi.char] = hanzi;
@@ -69,4 +78,8 @@ export function getAllHanzis(): HanziData[] {
 
 export function getTotalCharCount(): number {
   return ALL_DATA.length;
+}
+
+export function getHanziStrokes(char: string): StrokePoint[][] | undefined {
+  return STROKES[char];
 }

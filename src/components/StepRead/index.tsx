@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { speak } from '@/utils/speech';
 import { useSound } from '@/hooks/useSound';
-import type { StepReadProps } from './StepRead/types';
+import type { StepReadProps } from './types';
 import styles from './StepRead.module.scss';
 
 function StepRead({ hanzi, completed, onComplete }: StepReadProps) {
@@ -75,11 +75,11 @@ function StepRead({ hanzi, completed, onComplete }: StepReadProps) {
       <h3 className={styles.title}>🔊 读一读这个字</h3>
 
       <section className={styles.sentenceList}>
-        {hanzi.sentences.map((s, i) => (
+        {hanzi.sentences.map((s: string, i: number) => (
           <div key={i} className={styles.sentenceItem}>
             <span className={styles.sentenceNum}>{i + 1}</span>
             <span className={styles.sentenceText}>
-              {s.split(hanzi.char).map((part, idx, arr) => (
+              {s.split(hanzi.char).map((part: string, idx: number, arr: string[]) => (
                 <span key={idx}>
                   {part}
                   {idx < arr.length - 1 && <span className={styles.hanziChar}>{hanzi.char}</span>}

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useProgressStore } from '@/store/progressStore';
 import * as sound from '@/utils/sound';
 
@@ -8,7 +8,10 @@ import * as sound from '@/utils/sound';
  */
 export function useSound() {
   const { data } = useProgressStore();
-  const enabled = data.settings.audioFeedback && data.settings.soundEnabled;
+  
+  const enabled = useMemo(() => {
+    return data.settings.audioFeedback && data.settings.soundEnabled;
+  }, [data.settings.audioFeedback, data.settings.soundEnabled]);
 
   const playCorrect = useCallback(() => {
     if (enabled) sound.playCorrect();

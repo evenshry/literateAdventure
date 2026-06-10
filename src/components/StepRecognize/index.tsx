@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { speak } from '@/utils/speech';
 import { useSound } from '@/hooks/useSound';
 import StrokeAnimation from '@/components/StrokeAnimation';
-import type { StepRecognizeProps } from './StepRecognize/types';
+import type { StepRecognizeProps } from './types';
 import styles from './StepRecognize.module.scss';
 
 function StepRecognize({ hanzi, completed, onComplete }: StepRecognizeProps) {
@@ -50,7 +50,7 @@ function StepRecognize({ hanzi, completed, onComplete }: StepRecognizeProps) {
       <section className={styles.examples}>
         <h4>可以组词：</h4>
         <div className={styles.chips}>
-          {hanzi.examples.map((w) => (
+          {hanzi.examples.map((w: string) => (
             <button
               key={w}
               className={styles.chip}
@@ -65,11 +65,11 @@ function StepRecognize({ hanzi, completed, onComplete }: StepRecognizeProps) {
       <section className={styles.sentences}>
         <h4>在句子里看一看：</h4>
         <ul>
-          {hanzi.sentences.map((s, i) => {
+          {hanzi.sentences.map((s: string, i: number) => {
           const parts = s.split(hanzi.char);
           return (
             <li key={i} onClick={() => void speak(s)}>
-              {parts.map((p, idx) => (
+              {parts.map((p: string, idx: number) => (
               <span key={idx}>
                 {p}
                 {idx < parts.length - 1 && <span className={styles.highlightChar}>{hanzi.char}</span>}

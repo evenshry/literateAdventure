@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { useProgressStore } from '@/store/progressStore';
 import { LEVELS, getLevelChars } from '@/data/hanziData';
+import { ROUTES } from '@/routes';
+import type { LevelId } from '@/types/global';
 import styles from './index.module.scss';
 
 function Home() {
@@ -8,12 +10,12 @@ function Home() {
   const { data, setLevel } = useProgressStore();
 
   function startLevel(levelId: string) {
-    setLevel(levelId as any);
-    navigate(`/map/${levelId}`);
+    setLevel(levelId as LevelId);
+    navigate(ROUTES.MAP_LEVEL(levelId));
   }
 
   function continueLast() {
-    navigate(`/map/${data.currentLevel}`);
+    navigate(ROUTES.MAP_LEVEL(data.currentLevel));
   }
 
   return (
@@ -52,10 +54,10 @@ function Home() {
           继续冒险（{getLevelChars(data.currentLevel).length} 字）
         </button>
         <div className={styles.subActions}>
-          <button className={styles.btnGhost} onClick={() => navigate('/wrong')}>
+          <button className={styles.btnGhost} onClick={() => navigate(ROUTES.WRONG)}>
             错字本
           </button>
-          <button className={styles.btnGhost} onClick={() => navigate('/dashboard')}>
+          <button className={styles.btnGhost} onClick={() => navigate(ROUTES.DASHBOARD)}>
             家长看板
           </button>
         </div>

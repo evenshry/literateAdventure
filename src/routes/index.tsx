@@ -1,11 +1,11 @@
 /**
  * 路由配置
- * 使用 React Router v6 + 懒加载
+ * 使用 React Router v6 + 懒加载 + 哈希模式
+ * 哈希模式：URL 形如 #/map/L1，无需服务器配置
  */
 
 import { lazy, Suspense, type JSX } from 'react';
-import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom';
-import { useProgressStore } from '@/store/progressStore';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 // 懒加载页面组件
 const Home = lazy(() => import('@/pages/Home'));
@@ -48,63 +48,79 @@ function PrivateRoute({ children }: { children: JSX.Element }) {
   return children;
 }
 
-// 路由配置
-const routes: RouteObject[] = [
-  {
-    path: '/',
-    element: (
-      <LazyWrapper>
-        <Home />
-      </LazyWrapper>
-    ),
-  },
-  {
-    path: '/map',
-    element: (
-      <LazyWrapper>
-        <Map />
-      </LazyWrapper>
-    ),
-  },
-  {
-    path: '/map/:level',
-    element: (
-      <LazyWrapper>
-        <Map />
-      </LazyWrapper>
-    ),
-  },
-  {
-    path: '/learn/:char',
-    element: (
-      <LazyWrapper>
-        <Learn />
-      </LazyWrapper>
-    ),
-  },
-  {
-    path: '/wrong',
-    element: (
-      <LazyWrapper>
-        <WrongBook />
-      </LazyWrapper>
-    ),
-  },
-  {
-    path: '/dashboard',
-    element: (
-      <LazyWrapper>
-        <Dashboard />
-      </LazyWrapper>
-    ),
-  },
-  {
-    path: '*',
-    element: <Navigate to="/" replace />,
-  },
-];
+/**
+ * 路由常量
+ * 集中管理路径，避免硬编码字符串
+ */
+export const ROUTES = {
+  HOME: '/',
+  MAP: '/map',
+  MAP_LEVEL: (level: string) => `/map/${level}`,
+  LEARN_CHAR: (char: string) => `/learn/${encodeURIComponent(char)}`,
+  WRONG: '/wrong',
+  DASHBOARD: '/dashboard',
+} as const;
 
-// 创建路由实例
-export const router = createBrowserRouter(routes);
+/**
+ * 哈希模式路由应用
+ * URL 形如：https://example.com/#/map/L1
+ */
+function AppRouter() {
+  return (
+    <HashRouter>
+      <Routes>
+        <Route
+          path={ROUTES.HOME}
+          element={
+            <LazyWrapper>
+              <Home />
+            </LazyWrapper>
+          }
+        />
+        <Route
+          path={ROUTES.MAP}
+          element={
+            <LazyWrapper>
+              <Map />
+            </LazyWrapper>
+          }
+        />
+        <Route
+          path="/map/:level"
+          element={
+            <LazyWrapper>
+              <Map />
+            </LazyWrapper>
+          }
+        />
+        <Route
+          path="/learn/:char"
+          element={
+            <LazyWrapper>
+              <Learn />
+            </LazyWrapper>
+          }
+        />
+        <Route
+          path={ROUTES.WRONG}
+          element={
+            <LazyWrapper>
+              <WrongBook />
+            </LazyWrapper>
+          }
+        />
+        <Route
+          path={ROUTES.DASHBOARD}
+          element={
+            <LazyWrapper>
+              <Dashboard />
+            </LazyWrapper>
+          }
+        />
+        <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
+      </Routes>
+    </HashRouter>
+  );
+}
 
-export default router;
+export default AppRouter;

@@ -2,7 +2,7 @@
  * 性能优化工具函数
  */
 
-import { type DependencyList, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, type DependencyList, useEffect, useRef, useCallback, useMemo } from 'react';
 
 /**
  * 防抖 Hook
@@ -83,6 +83,3 @@ export function useUpdateEffect(effect: () => void | (() => void), deps: Depende
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }
-
-// 需要引入 useState
-import { useState } from 'react';

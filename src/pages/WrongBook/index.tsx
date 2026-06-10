@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProgressStore } from '@/store/progressStore';
 import { getHanzi } from '@/data/hanziData';
+import { ROUTES } from '@/routes';
 import styles from './WrongBook.module.scss';
 
 function WrongBook() {

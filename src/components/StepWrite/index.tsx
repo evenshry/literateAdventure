@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { speak } from '@/utils/speech';
 import { useSound } from '@/hooks/useSound';
-import type { StepWriteProps } from './StepWrite/types';
+import type { StepWriteProps } from './types';
 import styles from './StepWrite.module.scss';
 
 type Mode = 'trace' | 'free';

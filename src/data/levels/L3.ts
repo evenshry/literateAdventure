@@ -411,6 +411,20 @@ export const L3_DATA: HanziData[] = [
       q('L3-deer1-3', 'match', '选出有鹿的词', ['鹿角', '火车', '口水'], '鹿角'),
     ],
   },
+  {
+    char: '叶',
+    level: 'L3',
+    pinyin: 'yè',
+    meaning: '叶子的叶',
+    emoji: '🍃',
+    examples: ['树叶', '叶子', '绿叶', '红叶'],
+    sentences: ['树叶绿了。', '秋天的红叶真美。'],
+    practice: [
+      q('L3-leaf1-1', 'match', '「叶」组词', ['树叶', '火车', '水果'], '树叶'),
+      q('L3-leaf1-2', 'fill', '___子绿绿的。', ['叶', '花', '草'], '叶'),
+      q('L3-leaf1-3', 'match', '选出有叶的词', ['绿叶', '火车', '口水'], '绿叶'),
+    ],
+  },
 ];
 
 export const L3_CHARS = L3_DATA.map((h) => h.char);

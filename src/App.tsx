@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
-import { RouterProvider } from 'react-router-dom';
-import { router } from '@/routes';
+import AppRouter from '@/routes';
 import { useProgressStore } from '@/store/progressStore';
 
 function App() {
@@ -29,7 +28,7 @@ function App() {
     );
   }
 
-  return <RouterProvider router={router} />;
+  return <AppRouter />;
 }
 
 export default App;

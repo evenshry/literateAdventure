@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { speak } from '@/utils/speech';
 import { useSound } from '@/hooks/useSound';
-import type { StepPracticeProps } from './StepPractice/types';
+import type { StepPracticeProps } from './types';
 import type { HanziData } from '@/types/global';
 import styles from './StepPractice.module.scss';
 
