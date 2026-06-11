@@ -3,7 +3,7 @@ import { speak } from '@/utils/speech';
 import { useSound } from '@/hooks/useSound';
 import StrokeAnimation from '@/components/StrokeAnimation';
 import type { StepRecognizeProps } from './types';
-import styles from './StepRecognize.module.scss';
+import styles from './index.module.scss';
 
 function StepRecognize({ hanzi, completed, onComplete }: StepRecognizeProps) {
   const [watched, setWatched] = useState(completed);

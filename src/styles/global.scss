@@ -118,8 +118,12 @@ img {
 
   &:hover {
     background: rgba(45, 139, 87, 0.08);
-    transform: translateY(-2px);
-    box-shadow: $shadow-base;
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 20px rgba(45, 139, 87, 0.2);
+  }
+
+  &:active {
+    transform: translateY(-1px) scale(0.98);
   }
 }
 

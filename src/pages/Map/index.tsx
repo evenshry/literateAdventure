@@ -393,7 +393,11 @@ function Map() {
     fctx.font = '22px serif';
     flowerClusters.forEach((cluster) => {
       cluster.flowers.forEach((flower) => {
-        fctx.fillText(flower.emoji, cluster.x + flower.ox - 10, cluster.y - FLOWER_CANVAS_OFFSET_Y + flower.oy);
+        fctx.fillText(
+          flower.emoji,
+          cluster.x + flower.ox - 10,
+          cluster.y - FLOWER_CANVAS_OFFSET_Y + flower.oy
+        );
       });
     });
     flowerCanvasRef.current = offscreen;
@@ -507,12 +511,12 @@ function Map() {
         ctx.shadowOffsetY = 4;
         ctx.restore();
 
-        // node text
-        ctx.font = `${completed ? 26 : 28}px "KaiTi", "STKaiti", serif`;
+        // node text - 始终显示汉字
+        ctx.font = `${completed ? 32 : 32}px "KaiTi", "STKaiti", serif`;
         ctx.fillStyle = completed ? '#2d8b57' : '#2b2b2b';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(completed ? '⭐' : h.char, pos.x, pos.y - 4);
+        ctx.fillText(h.char, pos.x, pos.y - 4);
 
         // player character - yellow smiley emoji
         if (isCurrent && !completed) {
@@ -523,13 +527,15 @@ function Map() {
           ctx.fillText('😊', pos.x, pos.y + -30 + floatY);
         }
 
-        // stars
+        // stars - 显示在节点上方，已完成时半透明
         if (stars > 0) {
-          ctx.font = '16px serif';
+          ctx.font = '20px serif';
+          ctx.globalAlpha = completed ? 0.8 : 1;
           ctx.fillStyle = '#ffb400';
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'top';
-          ctx.fillText('★'.repeat(stars), pos.x + NODE_SIZE / 2 + 8, pos.y - NODE_SIZE / 2 + 4);
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText('⭐'.repeat(stars), pos.x, pos.y + 8);
+          ctx.globalAlpha = 1;
         }
       }
 

@@ -1,0 +1,369 @@
+.card {
+  background: #fff;
+  border-radius: 24px;
+  padding: 24px 22px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  animation: cardSlideUp 0.4s ease-out;
+
+  &.shake {
+    animation: shakeX 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  }
+}
+
+@keyframes cardSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shakeX {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 50%, 90% {
+    transform: translateX(-8px);
+  }
+  30%, 70% {
+    transform: translateX(8px);
+  }
+}
+
+.title {
+  font-family: "ZCOOL KuaiLe", sans-serif;
+  font-size: 26px;
+  color: #1f6b40;
+  margin-bottom: 18px;
+  letter-spacing: 3px;
+}
+
+.progress {
+  color: #666;
+  font-size: 15px;
+
+  strong {
+    color: #ff8a3d;
+    font-size: 22px;
+    margin: 0 4px;
+    display: inline-block;
+    animation: scorePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+}
+
+@keyframes scorePop {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+.bar {
+  margin: 10px auto 20px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #eee;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dotOn {
+  background: linear-gradient(135deg, #ffd76a, #ff8a3d);
+  box-shadow: 0 2px 8px rgba(255, 138, 61, 0.45);
+  animation: dotPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes dotPop {
+  0% {
+    transform: scale(0);
+  }
+  60% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.prompt {
+  background: linear-gradient(135deg, #f0fff4 0%, #e8f5e0 100%);
+  border: 2px solid rgba(45, 139, 87, 0.2);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  animation: promptSlide 0.4s ease-out;
+}
+
+@keyframes promptSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.qLabel {
+  color: #2d8b57;
+  font-size: 13px;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+
+.qText {
+  font-family: "KaiTi", "STKaiti", serif;
+  font-size: 22px;
+  color: #2b2b2b;
+  line-height: 1.5;
+}
+
+.options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 10px 0 14px;
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.option {
+  position: relative;
+  padding: 18px 16px;
+  font-size: 24px;
+  font-family: "KaiTi", "STKaiti", serif;
+  background: #fffbe6;
+  border: 3px solid #ffd76a;
+  border-radius: 16px;
+  cursor: pointer;
+  color: #5a4a00;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: optionEnter 0.4s ease-out backwards;
+
+  &:nth-child(1) { animation-delay: 0.05s; }
+  &:nth-child(2) { animation-delay: 0.1s; }
+  &:nth-child(3) { animation-delay: 0.15s; }
+  &:nth-child(4) { animation-delay: 0.2s; }
+
+  &:hover:not(:disabled) {
+    background: #ffedb4;
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: 0 8px 20px rgba(255, 180, 0, 0.35);
+    border-color: #ffb84d;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(-1px) scale(0.99);
+  }
+
+  &.correct {
+    background: linear-gradient(135deg, #e8f5e0, #d4edda);
+    border-color: #2d8b57;
+    color: #1f6b40;
+    animation: correctPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 16px rgba(45, 139, 87, 0.3);
+  }
+
+  &.wrong {
+    background: linear-gradient(135deg, #ffe0e0, #ffd0d0);
+    border-color: #e85d5d;
+    color: #7a1f1f;
+    animation: wrongShake 0.5s ease;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.85;
+  }
+}
+
+@keyframes optionEnter {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes correctPop {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.08);
+  }
+  60% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes wrongShake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20%, 60% {
+    transform: translateX(-6px);
+  }
+  40%, 80% {
+    transform: translateX(6px);
+  }
+}
+
+.tag {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  animation: tagPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes tagPop {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.tip {
+  margin-top: 10px;
+  color: #888;
+  font-size: 14px;
+  animation: tipFade 0.5s ease-out;
+}
+
+@keyframes tipFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.done {
+  padding: 20px 10px;
+  animation: doneEnter 0.5s ease-out;
+}
+
+@keyframes doneEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.bigIcon {
+  font-size: 80px;
+  animation: bounce 1s infinite alternate;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+@keyframes bounce {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-10px);
+  }
+}
+
+.bigText {
+  font-family: "ZCOOL KuaiLe", sans-serif;
+  font-size: 32px;
+  color: #1f6b40;
+  letter-spacing: 4px;
+  margin: 6px 0;
+  animation: textPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s backwards;
+}
+
+@keyframes textPop {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.done p {
+  color: #555;
+  font-size: 16px;
+  margin-bottom: 14px;
+  animation: textFade 0.5s ease-out 0.3s backwards;
+}
+
+@keyframes textFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.ghostBtn {
+  padding: 12px 24px;
+  border-radius: 14px;
+  border: 2px solid #2d8b57;
+  background: #fff;
+  color: #1f6b40;
+  font-size: 16px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: btnFade 0.5s ease-out 0.4s backwards;
+
+  &:hover {
+    background: #e8f5e0;
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 4px 12px rgba(45, 139, 87, 0.25);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.98);
+  }
+}
+
+@keyframes btnFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

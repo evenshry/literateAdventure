@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { speak } from '@/utils/speech';
 import { useSound } from '@/hooks/useSound';
 import type { StepReadProps } from './types';
-import styles from './StepRead.module.scss';
+import styles from './index.module.scss';
 
 function StepRead({ hanzi, completed, onComplete }: StepReadProps) {
   const [recording, setRecording] = useState(false);

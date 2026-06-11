@@ -1,249 +1,253 @@
-import { useEffect, useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import HanziWriter from 'hanzi-writer';
 import { speak } from '@/utils/speech';
 import { useSound } from '@/hooks/useSound';
 import type { StepWriteProps } from './types';
-import styles from './StepWrite.module.scss';
-
-type Mode = 'trace' | 'free';
+import styles from './index.module.scss';
 
 type Assessment = 'none' | 'great' | 'ok' | 'poor';
 
-function getAssessment(userStrokes: number, expectedStrokes: number): Assessment {
-  if (expectedStrokes <= 0) return 'none';
-  if (userStrokes >= expectedStrokes) return 'great';
-  if (userStrokes >= expectedStrokes - 1) return 'ok';
-  return 'poor';
+interface StrokeData {
+  strokeNum: number;
+  mistakesOnStroke: number;
+  totalMistakes: number;
+  strokesRemaining: number;
+}
+
+interface SummaryData {
+  character: string;
+  totalMistakes: number;
 }
 
 function StepWrite({ hanzi, completed, onComplete }: StepWriteProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const drawing = useRef(false);
-  const pathsRef = useRef<{ x: number; y: number }[][]>([]);
-  const currentStroke = useRef<{ x: number; y: number }[]>([]);
-  const [mode, setMode] = useState<Mode>('trace');
+  const containerRef = useRef<HTMLElement>(null);
+  const writerRef = useRef<any>(null);
+  const initializedRef = useRef(false);
   const [done, setDone] = useState(completed);
-  const [strokeCount, setStrokeCount] = useState(0);
+  const [currentStroke, setCurrentStroke] = useState(0);
+  const [totalStrokes, setTotalStrokes] = useState(0);
+  const [totalMistakes, setTotalMistakes] = useState(0);
   const [assessment, setAssessment] = useState<Assessment>('none');
+  const [showModal, setShowModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { playCorrect, playClick, playWrong } = useSound();
 
-  const expectedStrokes = hanzi.strokes?.length ?? 0;
-
-  function drawGuide(ctx: CanvasRenderingContext2D, w: number, h: number, showChar: boolean) {
-    ctx.clearRect(0, 0, w, h);
-    // 米字格
-    ctx.strokeStyle = 'rgba(255,138,61,0.4)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, 0); ctx.lineTo(w, h);
-    ctx.moveTo(w, 0); ctx.lineTo(0, h);
-    ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h);
-    ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2);
-    ctx.stroke();
-
-    if (showChar) {
-      ctx.save();
-      ctx.font = `${Math.floor(h * 0.7)}px "KaiTi", "STKaiti", "PingFang SC", serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = 'rgba(255, 180, 200, 0.55)';
-      ctx.fillText(hanzi.char, w / 2, h / 2 + h * 0.03);
-      ctx.restore();
-    }
-  }
-
-  function redraw() {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    drawGuide(ctx, canvas.width, canvas.height, mode === 'trace');
-
-    ctx.strokeStyle = '#2d8b57';
-    ctx.lineWidth = Math.max(6, canvas.width / 60);
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-
-    const allStrokes = [...pathsRef.current, currentStroke.current];
-    for (const stroke of allStrokes) {
-      if (stroke.length === 0) continue;
-      ctx.moveTo(stroke[0].x, stroke[0].y);
-      for (let i = 1; i < stroke.length; i++) {
-        ctx.lineTo(stroke[i].x, stroke[i].y);
-      }
-    }
-    ctx.stroke();
-  }
-
-  function resizeCanvas() {
-    const canvas = canvasRef.current;
-    const box = containerRef.current;
-    if (!canvas || !box) return;
-    const size = Math.min(box.clientWidth, 420);
-    canvas.width = size;
-    canvas.height = size;
-    redraw();
-  }
-
-  useEffect(() => {
-    resizeCanvas();
-    const ro = new ResizeObserver(resizeCanvas);
-    if (containerRef.current) ro.observe(containerRef.current);
-    return () => ro.disconnect();
+  const resetQuiz = useCallback(() => {
+    if (!writerRef.current) return;
+    writerRef.current.hideCharacter();
+    writerRef.current.quiz({
+      onMistake,
+      onCorrectStroke,
+      onComplete: onQuizComplete,
+    });
+    setCurrentStroke(0);
+    setTotalMistakes(0);
+    setAssessment('none');
+    setDone(false);
+    setShowModal(false);
   }, []);
 
-  useEffect(() => {
-    pathsRef.current = [];
-    currentStroke.current = [];
-    setStrokeCount(0);
-    setAssessment('none');
-    redraw();
-  }, [mode]);
+  const closeModal = useCallback(() => {
+    setShowModal(false);
+  }, []);
 
-  function getPos(e: PointerEvent<HTMLCanvasElement>) {
-    const canvas = canvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+  const continueWriting = useCallback(() => {
+    resetQuiz();
+  }, [resetQuiz]);
+
+  const onMistake = useCallback((strokeData: StrokeData) => {
+    console.log('Oh no! you made a mistake on stroke ' + (strokeData.strokeNum + 1));
+    console.log("You've made " + strokeData.mistakesOnStroke + ' mistakes on this stroke so far');
+    console.log("You've made " + strokeData.totalMistakes + ' total mistakes on this quiz');
+    console.log('There are ' + strokeData.strokesRemaining + ' strokes remaining in this character');
+
+    playWrong();
+    setTotalMistakes(strokeData.totalMistakes);
+    setAssessment('poor');
+  }, [playWrong]);
+
+  const onCorrectStroke = useCallback((strokeData: StrokeData) => {
+    const displayStrokeNum = strokeData.strokeNum + 1;
+    console.log('Yes!!! You got stroke ' + displayStrokeNum + ' correct!');
+    console.log('You made ' + strokeData.mistakesOnStroke + ' mistakes on this stroke');
+    console.log("You've made " + strokeData.totalMistakes + ' total mistakes on this quiz');
+    console.log('There are ' + strokeData.strokesRemaining + ' strokes remaining in this character');
+
+    playCorrect();
+    setCurrentStroke(displayStrokeNum);
+    setTotalMistakes(strokeData.totalMistakes);
+
+    if (strokeData.mistakesOnStroke === 0) {
+      setAssessment('great');
+    } else {
+      setAssessment('ok');
+    }
+  }, [playCorrect]);
+
+  const onQuizComplete = useCallback((summaryData: SummaryData) => {
+    console.log('You did it! You finished drawing ' + summaryData.character);
+    console.log('You made ' + summaryData.totalMistakes + ' total mistakes on this quiz');
+
+    setTotalMistakes(summaryData.totalMistakes);
+
+    if (summaryData.totalMistakes === 0) {
+      setAssessment('great');
+      playCorrect();
+      void speak('太棒了，完美！', { rate: 0.9 });
+    } else if (summaryData.totalMistakes <= totalStrokes / 2) {
+      setAssessment('ok');
+      playCorrect();
+      void speak('写得不错，继续加油！', { rate: 0.9 });
+    } else {
+      setAssessment('poor');
+      playWrong();
+      void speak('再试一次，相信你可以做得更好！', { rate: 0.9 });
+    }
+
+    setDone(true);
+    setShowModal(true);
+  }, [totalStrokes, playCorrect, playWrong]);
+
+  const confirmComplete = useCallback(() => {
+    setShowModal(false);
+    onComplete();
+  }, [onComplete]);
+
+  useEffect(() => {
+    if (!containerRef.current || initializedRef.current) return;
+
+    initializedRef.current = true;
+    setIsLoading(true);
+
+    const writer = HanziWriter.create(containerRef.current!, hanzi.char, {
+      width: 300,
+      height: 300,
+      padding: 30,
+      showOutline: true,
+      outlineColor: 'rgba(255, 180, 200, 0.55)',
+      strokeColor: '#2d8b57',
+      radicalColor: '#2d8b57',
+      strokeAnimationSpeed: 1,
+      delayBetweenStrokes: 200,
+      strokeWidth: 8,
+      highlightColor: 'rgba(255, 138, 61, 0.3)',
+      highlightOnComplete: true,
+      onLoadCharDataSuccess: (data) => {
+        setTotalStrokes(data.strokes.length);
+        setIsLoading(false);
+        setTimeout(() => {
+          writer.quiz({
+            onMistake,
+            onCorrectStroke,
+            onComplete: onQuizComplete,
+          });
+        }, 300);
+      },
+    });
+
+    writerRef.current = writer;
+
+    return () => {
+      if (writerRef.current) {
+        writerRef.current.destroy?.();
+      }
+    };
+  }, [onMistake, onCorrectStroke, onQuizComplete]);
+
+  function getAssessmentInfo(): { title: string; text: string; icon: string; cls: string } | null {
+    if (assessment === 'none') return null;
+    if (assessment === 'great') {
+      return {
+        title: '太棒了！',
+        text: `你完美地写出了「${hanzi.char}」，没有任何错误！`,
+        icon: '🌟',
+        cls: styles.assessmentGreat,
+      };
+    }
+    if (assessment === 'ok') {
+      return {
+        title: '写得不错！',
+        text: `「${hanzi.char}」写得还可以，共出错 ${totalMistakes} 次，继续加油！`,
+        icon: '👍',
+        cls: styles.assessmentOk,
+      };
+    }
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
+      title: '再试一次',
+      text: `「${hanzi.char}」需要多加练习，共出错 ${totalMistakes} 次。`,
+      icon: '💡',
+      cls: styles.assessmentPoor,
     };
   }
 
-  function onDown(e: PointerEvent<HTMLCanvasElement>) {
-    (e.target as Element).setPointerCapture?.(e.pointerId);
-    drawing.current = true;
-    const p = getPos(e);
-    currentStroke.current = [p];
-    redraw();
-  }
-
-  function onMove(e: PointerEvent<HTMLCanvasElement>) {
-    if (!drawing.current) return;
-    const p = getPos(e);
-    currentStroke.current.push(p);
-    redraw();
-  }
-
-  function onUp() {
-    if (!drawing.current) return;
-    drawing.current = false;
-    if (currentStroke.current.length > 2) {
-      pathsRef.current.push(currentStroke.current);
-      setStrokeCount(pathsRef.current.length);
-      setAssessment(getAssessment(pathsRef.current.length, expectedStrokes));
-    }
-    currentStroke.current = [];
-    redraw();
-  }
-
-  function clearCanvas() {
-    pathsRef.current = [];
-    currentStroke.current = [];
-    setStrokeCount(0);
-    setAssessment('none');
-    redraw();
-  }
-
-  function submit() {
-    if (pathsRef.current.length === 0) {
-      void speak('请先写一写！', { rate: 0.9 });
-      return;
-    }
-
-    const result = getAssessment(pathsRef.current.length, expectedStrokes);
-    setAssessment(result);
-
-    if (result === 'great') {
-      playCorrect();
-      void speak('太棒了，笔画完整！', { rate: 0.9 });
-      setDone(true);
-      onComplete();
-    } else if (result === 'ok') {
-      playCorrect();
-      void speak('写得不错，注意笔画顺序哦！', { rate: 0.9 });
-      setDone(true);
-      onComplete();
-    } else {
-      playWrong();
-      void speak('注意笔画数哦，再试试！', { rate: 0.9 });
-    }
-  }
-
-  function getAssessmentText(): { text: string; icon: string; cls: string } | null {
-    if (assessment === 'none' || done) return null;
-    if (assessment === 'great') return { text: '笔画完整 ✓', icon: '🌟', cls: styles.assessmentGreat };
-    if (assessment === 'ok') return { text: '基本正确 ✓', icon: '👍', cls: styles.assessmentOk };
-    return { text: `笔画偏少 (${strokeCount}/${expectedStrokes})`, icon: '💡', cls: styles.assessmentPoor };
-  }
-
-  const assessmentInfo = getAssessmentText();
+  const assessmentInfo = getAssessmentInfo();
 
   return (
     <div className={styles.card}>
       <h3 className={styles.title}>✍️ 写一写这个字</h3>
 
-      <div className={styles.modeTabs}>
-        <button
-          className={`${styles.modeBtn} ${mode === 'trace' ? styles.active : ''}`}
-          onClick={() => { playClick(); setMode('trace'); }}
+      <div className={styles.canvasWrap}>
+        <svg
+          ref={containerRef as any}
+          className={styles.writerContainer}
+          width={300}
+          height={300}
+          xmlns="http://www.w3.org/2000/svg"
         >
-          描红模式
-        </button>
-        <button
-          className={`${styles.modeBtn} ${mode === 'free' ? styles.active : ''}`}
-          onClick={() => { playClick(); setMode('free'); }}
-        >
-          自由书写
-        </button>
-      </div>
+          <line x1="0" y1="0" x2={300} y2={300} stroke="#E8E8E8" strokeWidth="1" />
+          <line x1={300} y1="0" x2="0" y2={300} stroke="#E8E8E8" strokeWidth="1" />
+          <line x1={150} y1="0" x2={150} y2={300} stroke="#E8E8E8" strokeWidth="1" />
+          <line x1="0" y1={150} x2={300} y2={150} stroke="#E8E8E8" strokeWidth="1" />
+          <rect x="0" y="0" width={300} height={300} fill="none" stroke="#DDD" strokeWidth="2" />
+        </svg>
 
-      <div className={styles.canvasWrap} ref={containerRef}>
-        <canvas
-          ref={canvasRef}
-          className={styles.canvas}
-          onPointerDown={onDown}
-          onPointerMove={onMove}
-          onPointerUp={onUp}
-          onPointerLeave={onUp}
-          onPointerCancel={onUp}
-          style={{ touchAction: 'none' }}
-        />
-        {strokeCount === 0 && !done && (
-          <div className={styles.hintOverlay}>
-            用手指或鼠标 {mode === 'trace' ? '跟着红字描写' : '写出这个字'}
+        {isLoading && (
+          <div className={styles.loading}>
+            <div className={styles.spinner} />
           </div>
+        )}
+
+        {!isLoading && !done && currentStroke === 0 && (
+          <div className={styles.hintOverlay}>按照提示写出笔画</div>
         )}
       </div>
 
       <div className={styles.stats}>
-        已写 <strong>{strokeCount}</strong> 笔
-        {expectedStrokes > 0 && <span className={styles.expectedHint}>（目标 {expectedStrokes} 笔）</span>}
-      </div>
-
-      {assessmentInfo && (
-        <div className={`${styles.assessment} ${assessmentInfo.cls}`}>
-          <span>{assessmentInfo.icon}</span>
-          <span>{assessmentInfo.text}</span>
-        </div>
-      )}
-
-      <div className={styles.actions}>
-        <button className={styles.ghostBtn} onClick={clearCanvas}>🧹 清空重来</button>
-        {done ? (
-          <div className={styles.doneTag}>✓ 写得真棒！</div>
-        ) : (
-          <button className={styles.primaryBtn} onClick={submit}>
-            写好了！
-          </button>
+        第 <strong>{currentStroke || 1}</strong> 笔 / 共 {totalStrokes} 笔
+        {totalMistakes > 0 && (
+          <span className={styles.mistakesHint}>（错误 {totalMistakes} 次）</span>
         )}
       </div>
 
+      <div className={styles.actions}>
+        <button className={styles.ghostBtn} onClick={() => { playClick(); resetQuiz(); }}>
+          🧹 重新开始
+        </button>
+      </div>
+
       <p className={styles.tip}>
-        💡 小提示：先按住鼠标/手指，沿笔画走向书写；写完一笔会自动断开。
+        💡 小提示：按照正确的笔顺书写，系统会实时评估你的书写。
       </p>
+
+      {showModal && assessmentInfo && (
+        <div className={styles.modalOverlay} onClick={closeModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={`${styles.modalIcon} ${assessmentInfo.cls}`}>
+              {assessmentInfo.icon}
+            </div>
+            <h3 className={styles.modalTitle}>{assessmentInfo.title}</h3>
+            <p className={styles.modalText}>{assessmentInfo.text}</p>
+            <div className={styles.modalActions}>
+              <button className={styles.modalBtnSecondary} onClick={continueWriting}>
+                再写一次
+              </button>
+              <button className={styles.modalBtnPrimary} onClick={confirmComplete}>
+                确认完成
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

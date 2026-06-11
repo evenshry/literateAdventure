@@ -36,7 +36,6 @@ export interface HanziData {
   examples: string[];
   sentences: string[];
   practice: PracticeQuestion[];
-  strokes?: StrokePoint[][];
 }
 
 export interface CharProgress {

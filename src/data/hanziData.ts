@@ -3,7 +3,6 @@ import { L1_DATA, L1_CHARS } from './levels/L1';
 import { L2_DATA, L2_CHARS } from './levels/L2';
 import { L3_DATA, L3_CHARS } from './levels/L3';
 import { L4_DATA, L4_CHARS } from './levels/L4';
-import { STROKES } from './strokeData';
 import { getTonePinyin } from '@/utils/pinyin';
 
 export const LEVELS: LevelInfo[] = [
@@ -42,14 +41,16 @@ const ALL_DATA: HanziData[] = [...L1_DATA, ...L2_DATA, ...L3_DATA, ...L4_DATA].m
   (hanzi): HanziData => ({
     ...hanzi,
     tonePinyin: getTonePinyin(hanzi.char),
-    strokes: STROKES[hanzi.char],
   })
 );
 
-export const HANZI_DB: Record<string, HanziData> = ALL_DATA.reduce((acc, hanzi) => {
-  acc[hanzi.char] = hanzi;
-  return acc;
-}, {} as Record<string, HanziData>);
+export const HANZI_DB: Record<string, HanziData> = ALL_DATA.reduce(
+  (acc, hanzi) => {
+    acc[hanzi.char] = hanzi;
+    return acc;
+  },
+  {} as Record<string, HanziData>
+);
 
 export const LEVEL_CHARS: Record<LevelId, string[]> = {
   L1: L1_CHARS,
@@ -63,9 +64,7 @@ export function getHanzi(char: string): HanziData | undefined {
 }
 
 export function getLevelChars(level: LevelId): HanziData[] {
-  return LEVEL_CHARS[level]
-    .map((c) => HANZI_DB[c])
-    .filter(Boolean);
+  return LEVEL_CHARS[level].map((c) => HANZI_DB[c]).filter(Boolean);
 }
 
 export function getLevel(id: LevelId): LevelInfo | undefined {
@@ -78,8 +77,4 @@ export function getAllHanzis(): HanziData[] {
 
 export function getTotalCharCount(): number {
   return ALL_DATA.length;
-}
-
-export function getHanziStrokes(char: string): StrokePoint[][] | undefined {
-  return STROKES[char];
 }

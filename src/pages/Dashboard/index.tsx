@@ -2,8 +2,7 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProgressStore } from '@/store/progressStore';
 import { getHanzi, LEVELS, getLevelChars } from '@/data/hanziData';
-import { ROUTES } from '@/routes';
-import styles from './Dashboard.module.scss';
+import styles from './index.module.scss';
 
 function Dashboard() {
   const navigate = useNavigate();

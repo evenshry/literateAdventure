@@ -13,6 +13,7 @@ const Map = lazy(() => import('@/pages/Map'));
 const Learn = lazy(() => import('@/pages/Learn'));
 const WrongBook = lazy(() => import('@/pages/WrongBook'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const TestStroke = lazy(() => import('@/pages/TestStroke'));
 
 // 加载中组件
 function LoadingFallback() {
@@ -114,6 +115,14 @@ function AppRouter() {
           element={
             <LazyWrapper>
               <Dashboard />
+            </LazyWrapper>
+          }
+        />
+        <Route
+          path="/test-stroke"
+          element={
+            <LazyWrapper>
+              <TestStroke />
             </LazyWrapper>
           }
         />
