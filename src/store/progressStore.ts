@@ -39,7 +39,7 @@ function getCharProgress(
   return (
     state.data.charProgress[char] ?? {
       char,
-      steps: { recognize: false, write: false, practice: false, read: false },
+      steps: { play: false, recognize: false, write: false, practice: false, read: false },
       stars: 0,
       completed: false,
       wrongCount: 0,
@@ -73,7 +73,7 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
     const cp = getCharProgress(state, char);
     const nextSteps = { ...cp.steps, [step]: true };
     const allDone =
-      nextSteps.recognize && nextSteps.write && nextSteps.practice && nextSteps.read;
+      nextSteps.play && nextSteps.recognize && nextSteps.write && nextSteps.practice && nextSteps.read;
     const nextCharProgress: CharProgress = {
       ...cp,
       steps: nextSteps,

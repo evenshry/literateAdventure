@@ -6,6 +6,7 @@ import { speak } from '@/utils/speech';
 import { useSound } from '@/hooks/useSound';
 import { ROUTES } from '@/routes';
 import type { StepId } from '@/types/global';
+import StepPlay from '@components/StepPlay';
 import StepRecognize from '@components/StepRecognize';
 import StepWrite from '@components/StepWrite';
 import StepPractice from '@components/StepPractice';
@@ -14,6 +15,7 @@ import StarCelebration from '@components/StarCelebration';
 import styles from './index.module.scss';
 
 const STEPS: { id: StepId; label: string; icon: string }[] = [
+  { id: 'play', label: '玩', icon: '🎮' },
   { id: 'recognize', label: '识', icon: '👀' },
   { id: 'write', label: '写', icon: '✍️' },
   { id: 'practice', label: '练', icon: '🎯' },
@@ -27,14 +29,15 @@ function Learn() {
   const { data, markStepComplete, awardStarsForChar } = useProgressStore();
   const { playCorrect, playStar, playComplete } = useSound();
 
-  const [currentStep, setCurrentStep] = useState<StepId>('recognize');
+  const [currentStep, setCurrentStep] = useState<StepId>('play');
   const [celebrate, setCelebrate] = useState<{ stars: number } | null>(null);
 
   useEffect(() => {
     if (!hanzi) return;
     const cp = data.charProgress[hanzi.char];
     if (cp) {
-      if (!cp.steps.recognize) setCurrentStep('recognize');
+      if (!cp.steps.play) setCurrentStep('play');
+      else if (!cp.steps.recognize) setCurrentStep('recognize');
       else if (!cp.steps.write) setCurrentStep('write');
       else if (!cp.steps.practice) setCurrentStep('practice');
       else if (!cp.steps.read) setCurrentStep('read');
@@ -121,6 +124,13 @@ function Learn() {
       </nav>
 
       <main className={styles.stepBody}>
+        {currentStep === 'play' && (
+          <StepPlay
+            hanzi={hanzi}
+            completed={!!cp?.steps.play}
+            onComplete={() => onStepDone('play')}
+          />
+        )}
         {currentStep === 'recognize' && (
           <StepRecognize
             hanzi={hanzi}

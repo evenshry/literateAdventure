@@ -8,7 +8,7 @@ export interface LevelInfo {
   bgColor: string;
 }
 
-export type StepId = 'recognize' | 'write' | 'practice' | 'read';
+export type StepId = 'play' | 'recognize' | 'write' | 'practice' | 'read';
 
 export interface StrokePoint {
   x: number;
