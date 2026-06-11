@@ -35,7 +35,7 @@
 
 .gameCanvas {
   position: relative;
-  width: 100%;
+  width: 400px;
   border-radius: 12px;
   overflow: hidden;
 }
@@ -313,7 +313,8 @@
 }
 
 .fireBtn {
-  padding: 14px 32px;
+  height: 60px;
+  padding: 10px 20px;
   border-radius: 30px;
   background: linear-gradient(135deg, #ff7043 0%, #f4511e 100%);
   color: white;
@@ -341,11 +342,12 @@
 }
 
 .hintBtn {
+  height: 60px;
   background: rgba(255, 235, 59, 0.15);
   color: #ffeb3b;
-  border: 2px solid #ffeb3b;
-  padding: 10px 24px;
-  border-radius: 20px;
+  border: 1px solid #ffeb3b;
+  padding: 0px 10px;
+  border-radius: 30px;
   font-size: 14px;
   cursor: pointer;
   transition: all 0.3s;

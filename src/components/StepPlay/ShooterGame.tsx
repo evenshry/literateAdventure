@@ -222,8 +222,6 @@ function ShooterGame({ hanzi, onComplete }: ShooterGameProps) {
           <div className={styles.overlay}>
             <div className={styles.readyContent}>
               <div className={styles.cannonIcon}>🦋</div>
-              <h4>捕捉蝴蝶</h4>
-              <p>使用方向按钮瞄准，抛出捕虫网捕捉目标蝴蝶</p>
               <div className={styles.rules}>
                 <p>
                   🦋 抓住带有 <span className={styles.targetText}>{hanzi.char}</span>{' '}
@@ -313,7 +311,7 @@ function ShooterGame({ hanzi, onComplete }: ShooterGameProps) {
               ➡️
             </button>
             <button className={styles.hintBtn} onClick={handleHint}>
-              💡 提示
+              💡提示
             </button>
           </div>
         </div>

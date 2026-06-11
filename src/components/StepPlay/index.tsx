@@ -25,7 +25,7 @@ function StepPlay({ hanzi, completed, onComplete }: StepPlayProps) {
   return (
     <div className={styles.card}>
       <h3 className={styles.title}>🎯 先玩一玩</h3>
-      <p className={styles.subtitle}>汉字打靶：瞄准正确的字，击中得分！</p>
+      <p className={styles.subtitle}>捕捉蝴蝶：使用方向按钮瞄准，抛出捕虫网捕捉目标蝴蝶！</p>
 
       <div className={styles.gameArea}>
         <ShooterGame
