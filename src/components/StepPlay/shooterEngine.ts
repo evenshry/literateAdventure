@@ -1,6 +1,3 @@
-// 汉字大炮射击游戏引擎
-import type { Point, Enemy, EnemyType } from './towerDefenseTypes';
-
 // 敌人
 export interface ShooterEnemy {
   id: number;
@@ -71,40 +68,56 @@ export interface ShooterGameState {
 
 // 混淆字池
 const DISTRACTOR_PAIRS: Record<string, string[]> = {
-  '日': ['目', '白', '百', '曰', '田'],
-  '月': ['日', '用', '朋', '肉', '且'],
-  '人': ['入', '大', '天', '夫', '八'],
-  '口': ['日', '田', '回', '囚', '囗'],
-  '大': ['人', '天', '太', '夫', '犬'],
-  '小': ['少', '木', '术', '木', '示'],
-  '中': ['申', '甲', '由', '田', '电'],
-  '上': ['下', '止', '卡', '土', '丑'],
-  '下': ['上', '卡', '卞', '丑', '不'],
-  '土': ['土', '士', '王', '主', '玉'],
-  '山': ['出', '屮', '凵', '屰', '岳'],
-  '水': ['木', '氷', '氺', '永', '氾'],
-  '火': ['大', '炎', '灬', '灰', '灭'],
-  '手': ['毛', '丰', '予', '书', '尹'],
-  '目': ['日', '自', '省', '眉', '貝'],
-  '耳': ['目', '耷', '茸', '取', '弋'],
-  '足': ['足', '走', '促', '捉', '跳'],
-  '木': ['本', '术', '沫', '休', '床'],
-  '云': ['去', '公', '会', '合', '令'],
-  '雨': ['两', '西', '严', '需', '灵'],
-  '天': ['天', '夫', '大', '夭', '太'],
-  '多': ['夕', '名', '外', '夜', '够'],
-  '少': ['小', '妙', '沙', '纱', '钞'],
-  '白': ['日', '百', '自', '臼', '皀'],
-  '石': ['右', '后', '古', '台', '各'],
-  '田': ['日', '目', '由', '甲', '申'],
+  日: ['目', '白', '百', '曰', '田'],
+  月: ['日', '用', '朋', '肉', '且'],
+  人: ['入', '大', '天', '夫', '八'],
+  口: ['日', '田', '回', '囚', '囗'],
+  大: ['人', '天', '太', '夫', '犬'],
+  小: ['少', '木', '术', '木', '示'],
+  中: ['申', '甲', '由', '田', '电'],
+  上: ['下', '止', '卡', '土', '丑'],
+  下: ['上', '卡', '卞', '丑', '不'],
+  土: ['土', '士', '王', '主', '玉'],
+  山: ['出', '屮', '凵', '屰', '岳'],
+  水: ['木', '氷', '氺', '永', '氾'],
+  火: ['大', '炎', '灬', '灰', '灭'],
+  手: ['毛', '丰', '予', '书', '尹'],
+  目: ['日', '自', '省', '眉', '貝'],
+  耳: ['目', '耷', '茸', '取', '弋'],
+  足: ['足', '走', '促', '捉', '跳'],
+  木: ['本', '术', '沫', '休', '床'],
+  云: ['去', '公', '会', '合', '令'],
+  雨: ['两', '西', '严', '需', '灵'],
+  天: ['天', '夫', '大', '夭', '太'],
+  多: ['夕', '名', '外', '夜', '够'],
+  少: ['小', '妙', '沙', '纱', '钞'],
+  白: ['日', '百', '自', '臼', '皀'],
+  石: ['右', '后', '古', '台', '各'],
+  田: ['日', '目', '由', '甲', '申'],
 };
 
 // 默认混淆字
 const DEFAULT_DISTRACTORS = [
-  '日', '目', '白', '人', '大',
-  '小', '中', '上', '下', '口',
-  '山', '水', '火', '木', '土',
-  '天', '多', '少', '月', '石',
+  '日',
+  '目',
+  '白',
+  '人',
+  '大',
+  '小',
+  '中',
+  '上',
+  '下',
+  '口',
+  '山',
+  '水',
+  '火',
+  '木',
+  '土',
+  '天',
+  '多',
+  '少',
+  '月',
+  '石',
 ];
 
 // 获取混淆字
@@ -112,13 +125,15 @@ function getDistractorsForChar(char: string): string[] {
   if (DISTRACTOR_PAIRS[char]) {
     return DISTRACTOR_PAIRS[char];
   }
-  return DEFAULT_DISTRACTORS.filter(c => c !== char).sort(() => Math.random() - 0.5).slice(0, 5);
+  return DEFAULT_DISTRACTORS.filter((c) => c !== char)
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 5);
 }
 
 // 初始化游戏
 export function initShooterGame(targetChar: string): ShooterGameState {
   const distractors = getDistractorsForChar(targetChar);
-  
+
   return {
     phase: 'ready',
     targetChar,
@@ -151,12 +166,12 @@ export function initShooterGame(targetChar: string): ShooterGameState {
 export function spawnEnemies(state: ShooterGameState, count: number = 10): void {
   // 确保至少3个目标字
   const targetCount = 3;
-  
+
   // 生成随机排列的位置索引
   const positions = Array.from({ length: count }, (_, i) => i);
   const shuffled = positions.sort(() => Math.random() - 0.5);
   const targetPositions = shuffled.slice(0, targetCount);
-  
+
   // 生成所有敌人
   for (let i = 0; i < count; i++) {
     // 分散位置：8%-92%，分成3行
@@ -164,21 +179,28 @@ export function spawnEnemies(state: ShooterGameState, count: number = 10): void 
     const col = Math.floor(i / 3);
     const yBase = 15 + row * 12; // 3行，分别在15%、27%、39%
     const xSpread = 10 + (col / 3) * 80; // 从左到右分布
-    
+
     // 添加随机偏移
     const x = xSpread + Math.random() * 10 - 5;
     const y = yBase + Math.random() * 5;
-    
+
     const isTarget = targetPositions.includes(i);
     state.enemies.push(createEnemy(state, x, y, isTarget));
   }
 }
 
 // 创建单个敌人
-function createEnemy(state: ShooterGameState, x: number, y: number, isTarget: boolean): ShooterEnemy {
+function createEnemy(
+  state: ShooterGameState,
+  x: number,
+  y: number,
+  isTarget: boolean
+): ShooterEnemy {
   return {
     id: state.enemyIdCounter++,
-    char: isTarget ? state.targetChar : state.distractors[Math.floor(Math.random() * state.distractors.length)],
+    char: isTarget
+      ? state.targetChar
+      : state.distractors[Math.floor(Math.random() * state.distractors.length)],
     x,
     y,
     vx: Math.random() > 0.5 ? 1 : -1,
@@ -206,10 +228,10 @@ export function startGame(state: ShooterGameState): void {
 export function updateEnemies(state: ShooterGameState, deltaTime: number): void {
   for (const enemy of state.enemies) {
     if (enemy.isHit) continue;
-    
+
     // 移动
     enemy.x += enemy.vx * enemy.speed * deltaTime * 10;
-    
+
     // 边界反弹
     if (enemy.x > 92) {
       enemy.x = 92;
@@ -219,10 +241,10 @@ export function updateEnemies(state: ShooterGameState, deltaTime: number): void 
       enemy.vx = 1;
     }
   }
-  
+
   // 移除被击中且动画完成的敌人
   const now = Date.now();
-  state.enemies = state.enemies.filter(e => {
+  state.enemies = state.enemies.filter((e) => {
     if (e.isHit && e.hitTime) {
       return now - e.hitTime < 500; // 500ms后移除
     }
@@ -235,7 +257,7 @@ export function updateCannon(state: ShooterGameState, deltaTime: number): void {
   if (state.cannon.cooldown > 0) {
     state.cannon.cooldown -= deltaTime;
   }
-  
+
   // 平滑旋转
   const angleDiff = state.cannon.targetAngle - state.cannon.angle;
   state.cannon.angle += angleDiff * 0.15;
@@ -251,9 +273,9 @@ export function fire(state: ShooterGameState): ShooterEnemy | null {
   if (state.cannon.cooldown > 0 || state.phase !== 'playing') {
     return null;
   }
-  
+
   state.cannon.cooldown = state.cannon.maxCooldown;
-  
+
   // 创建子弹，使用当前大炮角度
   state.bullets.push({
     id: state.bulletIdCounter++,
@@ -261,29 +283,29 @@ export function fire(state: ShooterGameState): ShooterEnemy | null {
     y: state.cannon.y - 5,
     speed: 3,
   });
-  
+
   return null; // 不再使用射线检测，返回null
 }
 
 // 检测子弹与敌人的碰撞
 export function checkBulletCollisions(state: ShooterGameState): ShooterEnemy | null {
   let hitEnemy: ShooterEnemy | null = null;
-  
+
   for (const bullet of state.bullets) {
     for (const enemy of state.enemies) {
       if (enemy.isHit) continue;
-      
+
       // 计算子弹与敌人的距离
       const dx = bullet.x - enemy.x;
       const dy = bullet.y - enemy.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      
+
       // 敌人半径约3单位
       if (dist < 4) {
         enemy.isHit = true;
         enemy.hitTime = Date.now();
         bullet.x = -100; // 将子弹移出屏幕
-        
+
         // 添加爆炸效果
         state.explosions.push({
           x: enemy.x,
@@ -291,7 +313,7 @@ export function checkBulletCollisions(state: ShooterGameState): ShooterEnemy | n
           progress: 0,
           isSuccess: enemy.isTarget,
         });
-        
+
         // 添加击中特效
         for (let i = 0; i < 12; i++) {
           state.hitEffects.push({
@@ -301,10 +323,10 @@ export function checkBulletCollisions(state: ShooterGameState): ShooterEnemy | n
             isSuccess: enemy.isTarget,
           });
         }
-        
+
         // 屏幕震动
         state.screenShake = 0.3;
-        
+
         // 更新分数
         if (enemy.isTarget) {
           state.score++;
@@ -312,14 +334,14 @@ export function checkBulletCollisions(state: ShooterGameState): ShooterEnemy | n
           state.mistakes++;
           state.cannon.cooldown += 0.5;
         }
-        
+
         // 检查胜利/失败
         if (state.score >= state.maxScore) {
           state.phase = 'victory';
         } else if (state.mistakes >= state.maxMistakes) {
           state.phase = 'gameover';
         }
-        
+
         // 补充敌人
         setTimeout(() => {
           if (state.phase === 'playing') {
@@ -329,14 +351,14 @@ export function checkBulletCollisions(state: ShooterGameState): ShooterEnemy | n
             state.enemies.push(createEnemy(state, x, y, isTarget));
           }
         }, 600);
-        
+
         hitEnemy = enemy;
         break;
       }
     }
     if (hitEnemy) break;
   }
-  
+
   return hitEnemy;
 }
 
@@ -344,10 +366,10 @@ export function checkBulletCollisions(state: ShooterGameState): ShooterEnemy | n
 export function updateBullets(state: ShooterGameState, deltaTime: number): void {
   // 存储每个子弹的发射角度
   if (!state.bullets) return;
-  
+
   // 清理已爆炸的子弹
-  state.bullets = state.bullets.filter(b => {
-    const angleRad = (-90 + state.cannon.angle) * Math.PI / 180;
+  state.bullets = state.bullets.filter((b) => {
+    const angleRad = ((-90 + state.cannon.angle) * Math.PI) / 180;
     b.x += Math.cos(angleRad) * b.speed * deltaTime * 12;
     b.y += Math.sin(angleRad) * b.speed * deltaTime * 12;
     return b.y > -10 && b.y < 100 && b.x > -10 && b.x < 110;
@@ -356,17 +378,17 @@ export function updateBullets(state: ShooterGameState, deltaTime: number): void 
 
 // 更新爆炸效果
 export function updateExplosions(state: ShooterGameState, deltaTime: number): void {
-  state.explosions = state.explosions.filter(exp => {
+  state.explosions = state.explosions.filter((exp) => {
     exp.progress += deltaTime * 3;
     return exp.progress < 1;
   });
-  
+
   // 更新击中特效
-  state.hitEffects = state.hitEffects.filter(effect => {
+  state.hitEffects = state.hitEffects.filter((effect) => {
     effect.progress += deltaTime * 4;
     return effect.progress < 1;
   });
-  
+
   // 更新屏幕震动
   if (state.screenShake > 0) {
     state.screenShake -= deltaTime * 2;
@@ -403,21 +425,21 @@ export function drawShooterGame(
 ): void {
   const scaleX = width / 100;
   const scaleY = height / 100;
-  
+
   ctx.save();
-  
+
   // 应用屏幕震动
   if (state.screenShake > 0) {
     const shakeX = (Math.random() - 0.5) * state.screenShake * 20;
     const shakeY = (Math.random() - 0.5) * state.screenShake * 20;
     ctx.translate(shakeX, shakeY);
   }
-  
+
   ctx.clearRect(-50, -50, width + 100, height + 100);
-  
+
   // 绘制背景
   drawBackground(ctx, width, height, time);
-  
+
   // 绘制敌人
   drawEnemies(ctx, state, scaleX, scaleY, time);
 
@@ -437,10 +459,10 @@ export function drawShooterGame(
 
   // 绘制大炮
   drawCannon(ctx, state.cannon, scaleX, scaleY, time);
-  
+
   // 绘制UI
   drawUI(ctx, state, width);
-  
+
   ctx.restore();
 }
 
@@ -450,7 +472,12 @@ let backgroundCacheWidth = 0;
 let backgroundCacheHeight = 0;
 
 // 绘制背景（使用缓存避免随机元素闪烁）
-function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: number, time: number): void {
+function drawBackground(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  time: number
+): void {
   // 如果没有缓存或尺寸变化，重新生成背景缓存
   if (!backgroundCache || backgroundCacheWidth !== width || backgroundCacheHeight !== height) {
     backgroundCache = document.createElement('canvas');
@@ -458,11 +485,11 @@ function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: nu
     backgroundCache.height = height;
     backgroundCacheWidth = width;
     backgroundCacheHeight = height;
-    
+
     const bgCtx = backgroundCache.getContext('2d')!;
-    
+
     // === 预渲染静态背景元素 ===
-    
+
     // 天空渐变 - 更柔和的色调
     const skyGradient = bgCtx.createLinearGradient(0, 0, 0, height * 0.75);
     skyGradient.addColorStop(0, '#6BB3D9');
@@ -471,7 +498,7 @@ function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: nu
     skyGradient.addColorStop(1, '#E8F8FF');
     bgCtx.fillStyle = skyGradient;
     bgCtx.fillRect(0, 0, width, height * 0.75);
-    
+
     // 太阳
     bgCtx.fillStyle = '#FFE066';
     bgCtx.beginPath();
@@ -481,7 +508,7 @@ function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: nu
     bgCtx.beginPath();
     bgCtx.arc(width * 0.85, height * 0.12, 18, 0, Math.PI * 2);
     bgCtx.fill();
-    
+
     // 远山
     bgCtx.fillStyle = 'rgba(150, 180, 160, 0.35)';
     bgCtx.beginPath();
@@ -493,7 +520,7 @@ function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: nu
     bgCtx.lineTo(0, height * 0.75);
     bgCtx.closePath();
     bgCtx.fill();
-    
+
     // 地面 - 更柔和的绿色
     const groundGradient = bgCtx.createLinearGradient(0, height * 0.75, 0, height);
     groundGradient.addColorStop(0, '#90EE90');
@@ -502,7 +529,7 @@ function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: nu
     groundGradient.addColorStop(1, '#3D993D');
     bgCtx.fillStyle = groundGradient;
     bgCtx.fillRect(0, height * 0.75, width, height * 0.25);
-    
+
     // 草地纹理 - 使用确定性随机（基于索引）
     bgCtx.strokeStyle = 'rgba(30, 120, 30, 0.45)';
     bgCtx.lineWidth = 2;
@@ -512,13 +539,13 @@ function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: nu
       const randY = ((i * 6151) % 1000) / 1000;
       const x = randX * width;
       const y = height * 0.75 + 3 + randY * 18;
-      const curve = ((i * 127) % 100) / 100 * 4 - 2;
+      const curve = (((i * 127) % 100) / 100) * 4 - 2;
       bgCtx.beginPath();
       bgCtx.moveTo(x, y + 10);
       bgCtx.quadraticCurveTo(x + curve, y, x + curve * 0.5, y - 6);
       bgCtx.stroke();
     }
-    
+
     // 小花点缀 - 也是确定性位置
     const flowerColors = ['#FFB6C1', '#FFC0CB', '#FFDAB9', '#E6E6FA', '#FFFACD'];
     for (let i = 0; i < 10; i++) {
@@ -527,7 +554,7 @@ function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: nu
       const x = randX * width;
       const y = height * 0.77 + randY * 12;
       const petalColor = flowerColors[i % flowerColors.length];
-      
+
       // 花瓣
       bgCtx.fillStyle = petalColor;
       for (let j = 0; j < 5; j++) {
@@ -543,16 +570,16 @@ function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: nu
       bgCtx.fill();
     }
   }
-  
+
   // 绘制缓存的静态背景
   ctx.drawImage(backgroundCache, 0, 0);
-  
+
   // 云朵（动态，可漂浮）
   ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
   for (let i = 0; i < 5; i++) {
     const x = ((i * 30 + time * 2) % 120) - 10;
     const y = 15 + (i % 3) * 22;
-    drawCloud(ctx, x * width / 100, y * height / 100, 22 + (i % 2) * 8);
+    drawCloud(ctx, (x * width) / 100, (y * height) / 100, 22 + (i % 2) * 8);
   }
 }
 
@@ -575,22 +602,22 @@ function drawBullets(
   for (const bullet of state.bullets) {
     const x = bullet.x * scaleX;
     const y = bullet.y * scaleY;
-    
+
     // 网圈
     ctx.strokeStyle = '#d4af37';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(x, y, 12, 0, Math.PI * 2);
     ctx.stroke();
-    
+
     // 网兜（菱形网格）
     ctx.strokeStyle = 'rgba(255,255,255,0.7)';
     ctx.lineWidth = 1;
-    
+
     // 小网格
     for (let i = -8; i <= 8; i += 4) {
       for (let j = -8; j <= 8; j += 4) {
-        const dist = Math.sqrt(i*i + j*j);
+        const dist = Math.sqrt(i * i + j * j);
         if (dist <= 10) {
           ctx.beginPath();
           ctx.moveTo(x + i, y + j);
@@ -602,7 +629,7 @@ function drawBullets(
         }
       }
     }
-    
+
     // 连接线（从网中心到边缘）
     ctx.strokeStyle = '#d4af37';
     ctx.lineWidth = 1;
@@ -613,7 +640,7 @@ function drawBullets(
       ctx.lineTo(x + Math.cos(angle) * 12, y + Math.sin(angle) * 12);
       ctx.stroke();
     }
-    
+
     // 抛出效果尾迹
     ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
     ctx.beginPath();
@@ -632,34 +659,31 @@ function drawAimLine(
   width: number,
   height: number
 ): void {
-  const cx = cannon.x * width / 100;
-  const cy = cannon.y * height / 100;
+  const cx = (cannon.x * width) / 100;
+  const cy = (cannon.y * height) / 100;
   // 修复角度：0度指向正上方，正值向右偏，负值向左偏
-  const angleRad = (-90 + cannon.angle) * Math.PI / 180;
-  
+  const angleRad = ((-90 + cannon.angle) * Math.PI) / 180;
+
   ctx.strokeStyle = 'rgba(255, 255, 0, 0.4)';
   ctx.lineWidth = 3;
   ctx.setLineDash([10, 5]);
-  
+
   ctx.beginPath();
   ctx.moveTo(cx, cy);
-  ctx.lineTo(
-    cx + Math.cos(angleRad) * height * 0.8,
-    cy + Math.sin(angleRad) * height * 0.8
-  );
+  ctx.lineTo(cx + Math.cos(angleRad) * height * 0.8, cy + Math.sin(angleRad) * height * 0.8);
   ctx.stroke();
-  
+
   // 瞄准点
   const aimX = cx + Math.cos(angleRad) * height * 0.6;
   const aimY = cy + Math.sin(angleRad) * height * 0.6;
-  
+
   ctx.setLineDash([]);
   ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(aimX, aimY, 8, 0, Math.PI * 2);
   ctx.stroke();
-  
+
   ctx.strokeStyle = 'rgba(255, 215, 0, 0.4)';
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -677,20 +701,20 @@ function drawEnemies(
 ): void {
   for (const enemy of state.enemies) {
     if (enemy.isHit) continue;
-    
+
     const x = enemy.x * scaleX;
     const y = enemy.y * scaleY;
-    
+
     // 飞行动画（轻微上下浮动）
     const floatY = Math.sin(time * 3 + enemy.id) * 3;
-    
+
     // 目标蝴蝶金色光环
     if (enemy.isTarget) {
       ctx.beginPath();
       ctx.arc(x, y + floatY, 35, 0, Math.PI * 2);
       ctx.fillStyle = state.hintActive ? 'rgba(255, 215, 0, 0.45)' : 'rgba(255, 215, 0, 0.15)';
       ctx.fill();
-      
+
       if (state.hintActive) {
         const pulseSize = 35 + Math.sin(time * 10) * 5;
         ctx.beginPath();
@@ -700,10 +724,10 @@ function drawEnemies(
         ctx.stroke();
       }
     }
-    
+
     // 翅膀扇动
     const wingFlap = Math.sin(time * 10 + enemy.id) * 5;
-    
+
     // 目标蝴蝶 vs 普通蝴蝶
     const isTarget = enemy.isTarget;
     const palette = [
@@ -714,46 +738,46 @@ function drawEnemies(
     ];
     const colorIdx = isTarget ? 0 : (enemy.id % 3) + 1;
     const colors = palette[colorIdx];
-    
+
     const cx = x;
     const cy = y + floatY;
-    
+
     // === 侧面视角蝴蝶：翅膀在上，身体在翅膀底部下方水平 ===
     ctx.save();
     ctx.translate(cx, cy);
-    
+
     // 蝴蝶中心点 = (0, 0)
     // 翅膀在正上方，身体在翅膀底部正下方（水平横放）
-    
+
     // === 翅膀（在上，以身体与翅膀连接点为圆心扇动）===
     // 翅膀连接点 = (0, 0)
-    
+
     // 后翅膀（上层，稍微靠左）
     ctx.save();
     ctx.translate(0, 0);
     ctx.rotate(-0.2 + wingFlap * 0.04);
-    
+
     // 后翅膀主体
     ctx.fillStyle = colors.back;
     ctx.beginPath();
     ctx.ellipse(-5, -22, 12, 18, -0.1, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // 后翅膀花纹
     ctx.fillStyle = colors.edge;
     ctx.beginPath();
     ctx.arc(-5, -22, 4, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // 后翅膀轮廓
     ctx.strokeStyle = colors.edge;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.ellipse(-5, -22, 12, 18, -0.1, 0, Math.PI * 2);
     ctx.stroke();
-    
+
     ctx.restore();
-    
+
     // 前翅膀（下层，稍微靠右，覆盖在后翅膀上）
     ctx.save();
     ctx.translate(0, 0);
@@ -802,20 +826,20 @@ function drawEnemies(
     ctx.shadowOffsetY = 0;
 
     ctx.restore();
-    
+
     // === 身体（水平横放，紧贴翅膀底部）===
     // 身体在翅膀底部（y = 0）水平放置
     ctx.fillStyle = colors.body;
     ctx.beginPath();
     ctx.ellipse(0, 0, 12, 2.5, 0, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // === 头部（身体右端）===
     ctx.fillStyle = colors.body;
     ctx.beginPath();
     ctx.arc(14, 0, 2.8, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // 眼睛
     ctx.fillStyle = '#fff';
     ctx.beginPath();
@@ -824,7 +848,7 @@ function drawEnemies(
     ctx.beginPath();
     ctx.arc(15, 1, 0.8, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // 触角（从头部向上伸出）
     ctx.strokeStyle = colors.body;
     ctx.lineWidth = 0.8;
@@ -836,7 +860,7 @@ function drawEnemies(
     ctx.moveTo(16, -3);
     ctx.quadraticCurveTo(20, -8, 22, -11);
     ctx.stroke();
-    
+
     // 触角球
     ctx.fillStyle = colors.body;
     ctx.beginPath();
@@ -862,7 +886,7 @@ function drawExplosions(
     const y = exp.y * scaleY;
     const size = 20 + exp.progress * 40;
     const alpha = 1 - exp.progress;
-    
+
     if (exp.isSuccess) {
       // 成功：金色光环扩散
       ctx.strokeStyle = `rgba(255, 215, 0, ${alpha})`;
@@ -870,7 +894,7 @@ function drawExplosions(
       ctx.beginPath();
       ctx.arc(x, y, size, 0, Math.PI * 2);
       ctx.stroke();
-      
+
       // 内部光晕
       ctx.fillStyle = `rgba(255, 255, 200, ${alpha * 0.5})`;
       ctx.beginPath();
@@ -898,7 +922,7 @@ function drawHitEffects(
     const effect = state.hitEffects[i];
     const x = effect.x * scaleX;
     const y = effect.y * scaleY;
-    
+
     // 每个粒子沿随机方向飞散
     const angle = (i / state.hitEffects.length) * Math.PI * 2 + Math.random() * 0.5;
     const dist = effect.progress * 60;
@@ -906,7 +930,7 @@ function drawHitEffects(
     const py = y + Math.sin(angle) * dist;
     const alpha = 1 - effect.progress;
     const size = 6 * (1 - effect.progress * 0.5);
-    
+
     if (effect.isSuccess) {
       // 成功：金色粒子
       ctx.fillStyle = `rgba(255, 215, 0, ${alpha})`;
@@ -914,7 +938,7 @@ function drawHitEffects(
       // 失败：红色粒子
       ctx.fillStyle = `rgba(255, 80, 80, ${alpha})`;
     }
-    
+
     ctx.beginPath();
     ctx.arc(px, py, size, 0, Math.PI * 2);
     ctx.fill();
@@ -931,17 +955,17 @@ function drawCannon(
 ): void {
   const x = cannon.x * scaleX;
   const y = cannon.y * scaleY;
-  
+
   // 冷却状态
   const isCooling = cannon.cooldown > 0;
   const alpha = isCooling ? 0.6 : 1;
-  
+
   ctx.save();
   ctx.translate(x, y);
-  
+
   // 旋转（朝向目标方向）
-  ctx.rotate(cannon.angle * Math.PI / 180);
-  
+  ctx.rotate((cannon.angle * Math.PI) / 180);
+
   // 捕虫网手柄（木质，加长）
   const handleGradient = ctx.createLinearGradient(-4, -45, 4, 35);
   handleGradient.addColorStop(0, isCooling ? '#8b6645' : '#d4b896');
@@ -964,17 +988,17 @@ function drawCannon(
   ctx.fillStyle = isCooling ? '#888' : '#c0c0c0';
   ctx.fillRect(-5, -46, 10, 4);
   ctx.fillRect(-5, 30, 10, 4);
-  
+
   // 网圈（圆形，带立体感）
   ctx.save();
-  
+
   // 外圈阴影
   ctx.strokeStyle = 'rgba(0,0,0,0.3)';
   ctx.lineWidth = 4;
   ctx.beginPath();
   ctx.arc(2, -63, 26, 0, Math.PI * 2);
   ctx.stroke();
-  
+
   // 主网圈
   const ringGradient = ctx.createRadialGradient(-3, -68, 0, 0, -65, 25);
   ringGradient.addColorStop(0, isCooling ? '#a0a0a0' : '#ffd700');
@@ -1069,7 +1093,7 @@ function drawCannon(
   ctx.fill();
 
   ctx.restore();
-  
+
   // 冷却指示
   if (isCooling) {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
