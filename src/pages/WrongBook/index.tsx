@@ -57,7 +57,7 @@ function WrongBook() {
 
       {items.length === 0 ? (
         <div className={styles.empty}>
-          <div style={{ fontSize: 72 }}>🎉</div>
+          <div className={styles.emptyEmoji}>🎉</div>
           <h2>错字本空空如也！</h2>
           <p>太棒了，现在没有需要复习的字。继续加油！</p>
         </div>

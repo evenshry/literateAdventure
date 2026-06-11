@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     root: "./",
-    base: mode == "deploy" ? "/emotionalHome/" : "./",
+    base: mode == "deploy" ? "/literateAdventure/" : "./",
     resolve: {
       alias: {
         "@": fileURLToPath(new URL("./src", import.meta.url)),

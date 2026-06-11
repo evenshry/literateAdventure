@@ -591,7 +591,7 @@ function Map() {
         {chars.length === 0 && (
           <div className={styles.empty}>
             <p>🌱 字灵们还在沉睡中…</p>
-            <p style={{ marginTop: 8, color: '#6b6b6b' }}>
+            <p className={styles.emptySub}>
               这片区域正在等待探索，请先挑战前面的岛屿吧！
             </p>
           </div>

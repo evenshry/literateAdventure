@@ -18,12 +18,24 @@
   pointer-events: none;
 }
 
-.cloud {
+.cloud1 {
   position: absolute;
   font-size: 56px;
   opacity: 0.85;
   pointer-events: none;
   animation: floatA 6s ease-in-out infinite;
+  left: 10%;
+  top: 10%;
+}
+
+.cloud2 {
+  position: absolute;
+  font-size: 48px;
+  opacity: 0.85;
+  pointer-events: none;
+  animation: floatA 6s ease-in-out infinite;
+  right: 12%;
+  top: 18%;
 }
 
 @keyframes floatA {

@@ -21,8 +21,8 @@ function Home() {
   return (
     <div className={styles.home}>
       <div className={styles.bubble} />
-      <div className={styles.cloud} style={{ left: '10%', top: '10%' }}>☁️</div>
-      <div className={styles.cloud} style={{ right: '12%', top: '18%', fontSize: 48 }}>☁️</div>
+      <div className={styles.cloud1}>☁️</div>
+      <div className={styles.cloud2}>☁️</div>
 
       <header className={styles.header}>
         <h1 className={styles.title}>
