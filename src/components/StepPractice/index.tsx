@@ -4,7 +4,7 @@ import { useSound } from '@/hooks/useSound';
 import { useProgressStore } from '@/store/progressStore';
 import type { StepPracticeProps } from './types';
 import type { PracticeQuestion } from '@/types/global';
-import styles from './StepPractice.module.scss';
+import styles from './index.module.scss';
 
 const WRONG_THRESHOLD = 2; // 连续答错此次数后加入错字本
 

@@ -597,17 +597,6 @@ function Map() {
           </div>
         )}
       </section>
-
-      <div className={styles.storyPanel}>
-        <div className={styles.storyIcon}>📜</div>
-        <div className={styles.storyText}>
-          <p>你是一名字灵学徒，正在探索神秘的字灵森林。</p>
-          <p>森林中散落着许多汉字精灵，它们因未被认识而沉睡。</p>
-          <p>找到并"收服"它们（完成识、写、练、读），获得星星奖励！</p>
-        </div>
-      </div>
-
-      <footer className={styles.footHint}>🌿 点击字灵开始学习 🌟</footer>
     </div>
   );
 }

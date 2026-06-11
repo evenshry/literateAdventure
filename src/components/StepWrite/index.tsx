@@ -55,58 +55,71 @@ function StepWrite({ hanzi, completed, onComplete }: StepWriteProps) {
     resetQuiz();
   }, [resetQuiz]);
 
-  const onMistake = useCallback((strokeData: StrokeData) => {
-    console.log('Oh no! you made a mistake on stroke ' + (strokeData.strokeNum + 1));
-    console.log("You've made " + strokeData.mistakesOnStroke + ' mistakes on this stroke so far');
-    console.log("You've made " + strokeData.totalMistakes + ' total mistakes on this quiz');
-    console.log('There are ' + strokeData.strokesRemaining + ' strokes remaining in this character');
+  const onMistake = useCallback(
+    (strokeData: StrokeData) => {
+      console.log('Oh no! you made a mistake on stroke ' + (strokeData.strokeNum + 1));
+      console.log("You've made " + strokeData.mistakesOnStroke + ' mistakes on this stroke so far');
+      console.log("You've made " + strokeData.totalMistakes + ' total mistakes on this quiz');
+      console.log(
+        'There are ' + strokeData.strokesRemaining + ' strokes remaining in this character'
+      );
 
-    playWrong();
-    setTotalMistakes(strokeData.totalMistakes);
-    setAssessment('poor');
-  }, [playWrong]);
-
-  const onCorrectStroke = useCallback((strokeData: StrokeData) => {
-    const displayStrokeNum = strokeData.strokeNum + 1;
-    console.log('Yes!!! You got stroke ' + displayStrokeNum + ' correct!');
-    console.log('You made ' + strokeData.mistakesOnStroke + ' mistakes on this stroke');
-    console.log("You've made " + strokeData.totalMistakes + ' total mistakes on this quiz');
-    console.log('There are ' + strokeData.strokesRemaining + ' strokes remaining in this character');
-
-    playCorrect();
-    setCurrentStroke(displayStrokeNum);
-    setTotalMistakes(strokeData.totalMistakes);
-
-    if (strokeData.mistakesOnStroke === 0) {
-      setAssessment('great');
-    } else {
-      setAssessment('ok');
-    }
-  }, [playCorrect]);
-
-  const onQuizComplete = useCallback((summaryData: SummaryData) => {
-    console.log('You did it! You finished drawing ' + summaryData.character);
-    console.log('You made ' + summaryData.totalMistakes + ' total mistakes on this quiz');
-
-    setTotalMistakes(summaryData.totalMistakes);
-
-    if (summaryData.totalMistakes === 0) {
-      setAssessment('great');
-      playCorrect();
-      void speak('太棒了，完美！', { rate: 0.9 });
-    } else if (summaryData.totalMistakes <= totalStrokes / 2) {
-      setAssessment('ok');
-      playCorrect();
-      void speak('写得不错，继续加油！', { rate: 0.9 });
-    } else {
-      setAssessment('poor');
       playWrong();
-      void speak('再试一次，相信你可以做得更好！', { rate: 0.9 });
-    }
+      setTotalMistakes(strokeData.totalMistakes);
+      setAssessment('poor');
+    },
+    [playWrong]
+  );
 
-    setDone(true);
-    setShowModal(true);
-  }, [totalStrokes, playCorrect, playWrong]);
+  const onCorrectStroke = useCallback(
+    (strokeData: StrokeData) => {
+      const displayStrokeNum = strokeData.strokeNum + 1;
+      console.log('Yes!!! You got stroke ' + displayStrokeNum + ' correct!');
+      console.log('You made ' + strokeData.mistakesOnStroke + ' mistakes on this stroke');
+      console.log("You've made " + strokeData.totalMistakes + ' total mistakes on this quiz');
+      console.log(
+        'There are ' + strokeData.strokesRemaining + ' strokes remaining in this character'
+      );
+
+      playCorrect();
+      setCurrentStroke(displayStrokeNum);
+      setTotalMistakes(strokeData.totalMistakes);
+
+      if (strokeData.mistakesOnStroke === 0) {
+        setAssessment('great');
+      } else {
+        setAssessment('ok');
+      }
+    },
+    [playCorrect]
+  );
+
+  const onQuizComplete = useCallback(
+    (summaryData: SummaryData) => {
+      console.log('You did it! You finished drawing ' + summaryData.character);
+      console.log('You made ' + summaryData.totalMistakes + ' total mistakes on this quiz');
+
+      setTotalMistakes(summaryData.totalMistakes);
+
+      if (summaryData.totalMistakes === 0) {
+        setAssessment('great');
+        playCorrect();
+        void speak('太棒了，完美！', { rate: 0.9 });
+      } else if (summaryData.totalMistakes <= totalStrokes / 2) {
+        setAssessment('ok');
+        playCorrect();
+        void speak('写得不错，继续加油！', { rate: 0.9 });
+      } else {
+        setAssessment('poor');
+        playWrong();
+        void speak('再试一次，相信你可以做得更好！', { rate: 0.9 });
+      }
+
+      setDone(true);
+      setShowModal(true);
+    },
+    [totalStrokes, playCorrect, playWrong]
+  );
 
   const confirmComplete = useCallback(() => {
     setShowModal(false);
@@ -128,8 +141,10 @@ function StepWrite({ hanzi, completed, onComplete }: StepWriteProps) {
       strokeColor: '#2d8b57',
       radicalColor: '#2d8b57',
       strokeAnimationSpeed: 1,
-      delayBetweenStrokes: 200,
-      strokeWidth: 8,
+      delayBetweenStrokes: 500,
+      strokeWidth: 10,
+      drawingWidth: 60,
+      drawingColor: '#2d8b57',
       highlightColor: 'rgba(255, 138, 61, 0.3)',
       highlightOnComplete: true,
       onLoadCharDataSuccess: (data) => {
@@ -220,21 +235,23 @@ function StepWrite({ hanzi, completed, onComplete }: StepWriteProps) {
       </div>
 
       <div className={styles.actions}>
-        <button className={styles.ghostBtn} onClick={() => { playClick(); resetQuiz(); }}>
+        <button
+          className={styles.ghostBtn}
+          onClick={() => {
+            playClick();
+            resetQuiz();
+          }}
+        >
           🧹 重新开始
         </button>
       </div>
 
-      <p className={styles.tip}>
-        💡 小提示：按照正确的笔顺书写，系统会实时评估你的书写。
-      </p>
+      <p className={styles.tip}>💡 小提示：按照正确的笔顺书写，系统会实时评估你的书写。</p>
 
       {showModal && assessmentInfo && (
         <div className={styles.modalOverlay} onClick={closeModal}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={`${styles.modalIcon} ${assessmentInfo.cls}`}>
-              {assessmentInfo.icon}
-            </div>
+            <div className={`${styles.modalIcon} ${assessmentInfo.cls}`}>{assessmentInfo.icon}</div>
             <h3 className={styles.modalTitle}>{assessmentInfo.title}</h3>
             <p className={styles.modalText}>{assessmentInfo.text}</p>
             <div className={styles.modalActions}>
