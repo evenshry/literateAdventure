@@ -420,23 +420,23 @@ export function drawShooterGame(
   
   // 绘制敌人
   drawEnemies(ctx, state, scaleX, scaleY, time);
-  
-  // 绘制子弹
-  drawBullets(ctx, state, scaleX, scaleY);
-  
-  // 绘制爆炸效果
-  drawExplosions(ctx, state, scaleX, scaleY);
-  
-  // 绘制击中特效
-  drawHitEffects(ctx, state, scaleX, scaleY);
-  
-  // 绘制大炮
-  drawCannon(ctx, state.cannon, scaleX, scaleY, time);
-  
-  // 绘制瞄准线（在大炮之上）
+
+  // 绘制瞄准线（在敌人之下，捕虫网之上）
   if (state.phase === 'playing') {
     drawAimLine(ctx, state.cannon, width, height);
   }
+
+  // 绘制子弹
+  drawBullets(ctx, state, scaleX, scaleY);
+
+  // 绘制爆炸效果
+  drawExplosions(ctx, state, scaleX, scaleY);
+
+  // 绘制击中特效
+  drawHitEffects(ctx, state, scaleX, scaleY);
+
+  // 绘制大炮
+  drawCannon(ctx, state.cannon, scaleX, scaleY, time);
   
   // 绘制UI
   drawUI(ctx, state, width);
@@ -758,26 +758,49 @@ function drawEnemies(
     ctx.save();
     ctx.translate(0, 0);
     ctx.rotate(0.2 - wingFlap * 0.04);
-    
+
     // 前翅膀主体
     ctx.fillStyle = colors.front;
     ctx.beginPath();
     ctx.ellipse(5, -25, 14, 20, 0.1, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // 前翅膀花纹
     ctx.fillStyle = colors.edge;
     ctx.beginPath();
     ctx.arc(5, -25, 4, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // 前翅膀轮廓
     ctx.strokeStyle = colors.edge;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.ellipse(5, -25, 14, 20, 0.1, 0, Math.PI * 2);
     ctx.stroke();
-    
+
+    // === 汉字写在前翅膀中心（白色，加粗加大，文字描边阴影）===
+    ctx.fillStyle = '#fff';
+    ctx.font = '900 20px "PingFang SC", "Microsoft YaHei", "SimHei", serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // 多重阴影增强可读性
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+    // 绘制描边（增强可见性）
+    ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    ctx.strokeText(enemy.char, 5, -25);
+    // 绘制填充文字
+    ctx.fillText(enemy.char, 5, -25);
+    // 清除阴影
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+
     ctx.restore();
     
     // === 身体（水平横放，紧贴翅膀底部）===
@@ -822,17 +845,7 @@ function drawEnemies(
     ctx.beginPath();
     ctx.arc(22, -11, 1.2, 0, Math.PI * 2);
     ctx.fill();
-    
-    // === 汉字写在翅膀中心（白色，水平显示）===
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 16px serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(0,0,0,0.7)';
-    ctx.shadowBlur = 3;
-    ctx.fillText(enemy.char, 0, -20);
-    ctx.shadowBlur = 0;
-    
+
     ctx.restore();
   }
 }
@@ -929,28 +942,28 @@ function drawCannon(
   // 旋转（朝向目标方向）
   ctx.rotate(cannon.angle * Math.PI / 180);
   
-  // 捕虫网手柄（木质）
-  const handleGradient = ctx.createLinearGradient(-4, -45, 4, 10);
+  // 捕虫网手柄（木质，加长）
+  const handleGradient = ctx.createLinearGradient(-4, -45, 4, 35);
   handleGradient.addColorStop(0, isCooling ? '#8b6645' : '#d4b896');
   handleGradient.addColorStop(0.5, isCooling ? '#a07050' : '#c4a080');
   handleGradient.addColorStop(1, isCooling ? '#7a5d3f' : '#b09070');
   ctx.fillStyle = handleGradient;
-  ctx.fillRect(-4, -45, 8, 55);
-  
+  ctx.fillRect(-4, -45, 8, 80);
+
   // 手柄纹理
   ctx.strokeStyle = `rgba(0,0,0,${isCooling ? 0.15 : 0.25})`;
   ctx.lineWidth = 1;
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 8; i++) {
     ctx.beginPath();
     ctx.moveTo(-4, -35 + i * 10);
     ctx.lineTo(4, -35 + i * 10);
     ctx.stroke();
   }
-  
+
   // 手柄两端金属箍
   ctx.fillStyle = isCooling ? '#888' : '#c0c0c0';
   ctx.fillRect(-5, -46, 10, 4);
-  ctx.fillRect(-5, 5, 10, 4);
+  ctx.fillRect(-5, 30, 10, 4);
   
   // 网圈（圆形，带立体感）
   ctx.save();
