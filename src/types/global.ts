@@ -1,4 +1,13 @@
-export type LevelId = 'L1' | 'L2' | 'L3' | 'L4';
+export type LevelId = 'L1' | 'L2' | 'L3' | 'L4' | 'EN1' | 'EN2' | 'EN3' | 'EN4';
+
+export type Language = 'zh' | 'en';
+
+export function levelLanguage(level: LevelId): Language {
+  return level.startsWith('EN') ? 'en' : 'zh';
+}
+
+export const ZH_LEVELS: LevelId[] = ['L1', 'L2', 'L3', 'L4'];
+export const EN_LEVELS: LevelId[] = ['EN1', 'EN2', 'EN3', 'EN4'];
 
 export interface LevelInfo {
   id: LevelId;

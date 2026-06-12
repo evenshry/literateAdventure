@@ -743,8 +743,13 @@ function drawEnemies(
     const cy = y + floatY;
 
     // === 侧面视角蝴蝶：翅膀在上，身体在翅膀底部下方水平 ===
+    // 根据移动方向翻转蝴蝶，让头朝向飞行方向
+    const facingLeft = enemy.vx < 0;
+    const faceScale = facingLeft ? -1 : 1;
+
     ctx.save();
     ctx.translate(cx, cy);
+    ctx.scale(faceScale, 1);
 
     // 蝴蝶中心点 = (0, 0)
     // 翅膀在正上方，身体在翅膀底部正下方（水平横放）
@@ -803,6 +808,11 @@ function drawEnemies(
     ctx.stroke();
 
     // === 汉字写在前翅膀中心（白色，加粗加大，文字描边阴影）===
+    // 单独反向翻转，让文字保持正向显示
+    // 翻转后位置需要补偿：scale(-1,1) 时 x 坐标会变号，所以要取反
+    ctx.save();
+    ctx.scale(faceScale, 1);
+    const textX = 5 * faceScale; // 翻转补偿
     ctx.fillStyle = '#fff';
     ctx.font = '900 20px "PingFang SC", "Microsoft YaHei", "SimHei", serif';
     ctx.textAlign = 'center';
@@ -816,14 +826,15 @@ function drawEnemies(
     ctx.strokeStyle = 'rgba(0,0,0,0.85)';
     ctx.lineWidth = 3;
     ctx.lineJoin = 'round';
-    ctx.strokeText(enemy.char, 5, -25);
+    ctx.strokeText(enemy.char, textX, -25);
     // 绘制填充文字
-    ctx.fillText(enemy.char, 5, -25);
+    ctx.fillText(enemy.char, textX, -25);
     // 清除阴影
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
+    ctx.restore();
 
     ctx.restore();
 

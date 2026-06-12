@@ -2,9 +2,11 @@ import { useMemo, useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getHanzi } from '@/data/hanziData';
 import { useProgressStore } from '@/store/progressStore';
+import { useLanguageStore } from '@/store/languageStore';
 import { speak } from '@/utils/speech';
 import { useSound } from '@/hooks/useSound';
 import { ROUTES } from '@/routes';
+import LanguageSwitcher from '@components/LanguageSwitcher';
 import type { StepId } from '@/types/global';
 import StepPlay from '@components/StepPlay';
 import StepRecognize from '@components/StepRecognize';
@@ -14,18 +16,19 @@ import StepRead from '@components/StepRead';
 import StarCelebration from '@components/StarCelebration';
 import styles from './index.module.scss';
 
-const STEPS: { id: StepId; label: string; icon: string }[] = [
-  { id: 'play', label: '玩', icon: '🎮' },
-  { id: 'recognize', label: '识', icon: '👀' },
-  { id: 'write', label: '写', icon: '✍️' },
-  { id: 'practice', label: '练', icon: '🎯' },
-  { id: 'read', label: '读', icon: '🔊' },
+const STEPS: { id: StepId; labelZh: string; labelEn: string; icon: string }[] = [
+  { id: 'play', labelZh: '玩', labelEn: 'Play', icon: '🎮' },
+  { id: 'recognize', labelZh: '识', labelEn: 'Meet', icon: '👀' },
+  { id: 'write', labelZh: '写', labelEn: 'Write', icon: '✍️' },
+  { id: 'practice', labelZh: '练', labelEn: 'Practice', icon: '🎯' },
+  { id: 'read', labelZh: '读', labelEn: 'Read', icon: '🔊' },
 ];
 
 function Learn() {
   const { char } = useParams();
   const navigate = useNavigate();
   const hanzi = useMemo(() => (char ? getHanzi(char) : undefined), [char]);
+  const language = useLanguageStore((s) => s.language);
   const { data, markStepComplete, awardStarsForChar } = useProgressStore();
   const { playCorrect, playStar, playComplete } = useSound();
 
@@ -45,11 +48,13 @@ function Learn() {
   }, [hanzi, data.charProgress]);
 
   if (!hanzi) {
+    const msg = language === 'zh' ? '找不到这个字，回到首页看看吧～' : "Hmm, can't find this word — back home?";
+    const back = language === 'zh' ? '回首页' : 'Back home';
     return (
       <div className={styles.fallback}>
-        <p>找不到这个汉字，回到地图看看吧～</p>
+        <p>{msg}</p>
         <button className="btn-primary" onClick={() => navigate('/')}>
-          回首页
+          {back}
         </button>
       </div>
     );
@@ -58,11 +63,12 @@ function Learn() {
   const currentChar = hanzi.char;
   const cp = data.charProgress[currentChar];
   const allDone = cp?.completed ?? false;
+  const isEnglish = hanzi.level.startsWith('EN');
 
   function onStepDone(stepId: StepId) {
     playCorrect();
     markStepComplete(currentChar, stepId);
-    void speak('真棒！', { rate: 1.0 });
+    void speak(language === 'zh' ? '真棒！' : 'Great job!', { rate: 1.0 });
     const idx = STEPS.findIndex((s) => s.id === stepId);
     if (idx < STEPS.length - 1) {
       setTimeout(() => setCurrentStep(STEPS[idx + 1].id), 800);
@@ -79,14 +85,21 @@ function Learn() {
   }
 
   function handleSpeakChar() {
-    void speak(currentChar, { rate: 0.7, pitch: 1.15 });
+    void speak(isEnglish ? currentChar : currentChar, { rate: isEnglish ? 0.85 : 0.7, pitch: 1.15 });
   }
+
+  const backLabel = language === 'zh' ? '← 回地图' : '← Back to map';
+  const allDoneLabel =
+    language === 'zh'
+      ? '🎉 这个字已经全部学会啦！回地图继续冒险吧～'
+      : '🎉 All steps done! Head back to the map for more adventure～';
+  const backMapBtn = language === 'zh' ? '回地图' : 'Map';
 
   return (
     <div className={styles.learnPage}>
       <header className={styles.learnHeader}>
         <button className={styles.backBtn} onClick={() => navigate(`/map/${data.currentLevel}`)}>
-          ← 回地图
+          {backLabel}
         </button>
         <div className={styles.learnTitleWrap}>
           <button className={styles.bigChar} onClick={handleSpeakChar}>
@@ -97,10 +110,15 @@ function Learn() {
             <div className={styles.meaning}>{hanzi.meaning}</div>
           </div>
         </div>
-        <div className={styles.starsTop}>
-          {[1, 2, 3].map((s) => (
-            <span key={s} className={`${styles.topStar} ${s <= (cp?.stars ?? 0) ? styles.topLit : ''}`}>★</span>
-          ))}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+          <LanguageSwitcher compact />
+          <div className={styles.starsTop}>
+            {[1, 2, 3].map((s) => (
+              <span key={s} className={`${styles.topStar} ${s <= (cp?.stars ?? 0) ? styles.topLit : ''}`}>
+                ★
+              </span>
+            ))}
+          </div>
         </div>
       </header>
 
@@ -108,6 +126,7 @@ function Learn() {
         {STEPS.map((s, idx) => {
           const done = cp?.steps[s.id] ?? false;
           const active = currentStep === s.id;
+          const label = language === 'zh' ? s.labelZh : s.labelEn;
           return (
             <button
               key={s.id}
@@ -116,7 +135,7 @@ function Learn() {
             >
               <span className={styles.stepIdx}>{idx + 1}</span>
               <span className={styles.stepIcon}>{s.icon}</span>
-              <span className={styles.stepLabel}>{s.label}</span>
+              <span className={styles.stepLabel}>{label}</span>
               {done && <span className={styles.stepCheck}>✓</span>}
             </button>
           );
@@ -125,11 +144,7 @@ function Learn() {
 
       <main className={styles.stepBody}>
         {currentStep === 'play' && (
-          <StepPlay
-            hanzi={hanzi}
-            completed={!!cp?.steps.play}
-            onComplete={() => onStepDone('play')}
-          />
+          <StepPlay hanzi={hanzi} completed={!!cp?.steps.play} onComplete={() => onStepDone('play')} />
         )}
         {currentStep === 'recognize' && (
           <StepRecognize
@@ -139,11 +154,7 @@ function Learn() {
           />
         )}
         {currentStep === 'write' && (
-          <StepWrite
-            hanzi={hanzi}
-            completed={!!cp?.steps.write}
-            onComplete={() => onStepDone('write')}
-          />
+          <StepWrite hanzi={hanzi} completed={!!cp?.steps.write} onComplete={() => onStepDone('write')} />
         )}
         {currentStep === 'practice' && (
           <StepPractice
@@ -153,11 +164,7 @@ function Learn() {
           />
         )}
         {currentStep === 'read' && (
-          <StepRead
-            hanzi={hanzi}
-            completed={!!cp?.steps.read}
-            onComplete={() => onStepDone('read')}
-          />
+          <StepRead hanzi={hanzi} completed={!!cp?.steps.read} onComplete={() => onStepDone('read')} />
         )}
       </main>
 
@@ -165,9 +172,9 @@ function Learn() {
 
       {allDone && !celebrate && (
         <div className={styles.allDoneBanner}>
-          🎉 这个字已经全部学会啦！回地图继续冒险吧～
+          <span>{allDoneLabel}</span>
           <button className={styles.btnPrimary} onClick={() => navigate(ROUTES.MAP_LEVEL(data.currentLevel))}>
-            回地图
+            {backMapBtn}
           </button>
         </div>
       )}

@@ -30,7 +30,80 @@ function StepWrite({ hanzi, completed, onComplete }: StepWriteProps) {
   const [assessment, setAssessment] = useState<Assessment>('none');
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [englishFallback, setEnglishFallback] = useState(false);
   const { playCorrect, playClick, playWrong } = useSound();
+
+  const isEnglish = hanzi.level.startsWith('EN');
+
+  useEffect(() => {
+    if (isEnglish) {
+      setIsLoading(false);
+      setEnglishFallback(true);
+      initializedRef.current = true;
+      return;
+    }
+    if (!containerRef.current || initializedRef.current) return;
+
+    initializedRef.current = true;
+    setIsLoading(true);
+
+    const writer = HanziWriter.create(containerRef.current!, hanzi.char, {
+      width: 300,
+      height: 300,
+      padding: 30,
+      showOutline: true,
+      outlineColor: 'rgba(255, 180, 200, 0.55)',
+      strokeColor: '#2d8b57',
+      radicalColor: '#2d8b57',
+      strokeAnimationSpeed: 1,
+      delayBetweenStrokes: 500,
+      strokeWidth: 10,
+      drawingWidth: 60,
+      drawingColor: '#2d8b57',
+      highlightColor: 'rgba(255, 138, 61, 0.3)',
+      highlightOnComplete: true,
+      onLoadCharDataSuccess: (data) => {
+        setTotalStrokes(data.strokes.length);
+        setIsLoading(false);
+        setTimeout(() => {
+          writer.quiz({
+            onMistake,
+            onCorrectStroke,
+            onComplete: onQuizComplete,
+          });
+        }, 300);
+      },
+      onLoadCharDataError: () => {
+        setIsLoading(false);
+        setEnglishFallback(true);
+      },
+    });
+
+    writerRef.current = writer;
+
+    return () => {
+      if (writerRef.current) {
+        writerRef.current.destroy?.();
+      }
+    };
+  }, [onMistake, onCorrectStroke, onQuizComplete, isEnglish]);
+
+  function englishConfirm() {
+    playCorrect();
+    void speak(hanzi.char, { rate: 0.85 });
+    setDone(true);
+    setShowModal(true);
+  }
+
+  function englishListen() {
+    playClick();
+    void speak(hanzi.char, { rate: 0.75 });
+  }
+
+  function englishMarkComplete() {
+    setShowModal(false);
+    onComplete();
+  }
 
   const resetQuiz = useCallback(() => {
     if (!writerRef.current) return;
@@ -196,6 +269,65 @@ function StepWrite({ hanzi, completed, onComplete }: StepWriteProps) {
   }
 
   const assessmentInfo = getAssessmentInfo();
+
+  if (englishFallback) {
+    const label = isEnglish ? '✍️ Trace & Write' : '✍️ 写一写这个字';
+    const subtitle = isEnglish
+      ? 'Listen first, then write it out on paper — and tap “I did it!” when finished.'
+      : '先听一听笔顺，再自己写一写，完成后点“我写好啦！”';
+    const listenBtn = isEnglish ? '🔊 Listen' : '🔊 听一听';
+    const confirm = isEnglish ? 'I wrote it!' : '我写好啦！';
+    const doneLabel = isEnglish ? '✓ Traced' : '✓ 已经写过啦';
+    const tip = isEnglish
+      ? '💡 Tip: use a finger or pen to trace the letter on paper, then say it out loud.'
+      : '💡 小提示：按照正确的笔顺书写，系统会实时评估你的书写。';
+
+    return (
+      <div className={styles.card}>
+        <h3 className={styles.title}>{label}</h3>
+        <p className={styles.tip}>{subtitle}</p>
+
+        <div className={styles.englishTrace}>
+          <div className={styles.englishChar}>{hanzi.char}</div>
+          <div className={styles.englishPron}>{hanzi.pinyin}</div>
+        </div>
+
+        <div className={styles.actions}>
+          <button className={styles.ghostBtn} onClick={englishListen}>
+            {listenBtn}
+          </button>
+          {done ? (
+            <div className={styles.doneTag}>{doneLabel}</div>
+          ) : (
+            <button className={styles.primaryBtn} onClick={englishConfirm}>
+              {confirm}
+            </button>
+          )}
+        </div>
+
+        <p className={styles.tip}>{tip}</p>
+
+        {showModal && (
+          <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
+            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+              <div className={`${styles.modalIcon} ${styles.assessmentGreat}`}>🌟</div>
+              <h3 className={styles.modalTitle}>{isEnglish ? 'Nice work!' : '太棒了！'}</h3>
+              <p className={styles.modalText}>
+                {isEnglish
+                  ? `Good job tracing “${hanzi.char}”!`
+                  : `你完美地写出了「${hanzi.char}」！`}
+              </p>
+              <div className={styles.modalActions}>
+                <button className={styles.modalBtnPrimary} onClick={englishMarkComplete}>
+                  {isEnglish ? 'Continue' : '确认完成'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={styles.card}>

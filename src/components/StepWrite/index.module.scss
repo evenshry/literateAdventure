@@ -279,3 +279,57 @@
     box-shadow: 0 8px 20px rgba(45, 139, 87, 0.35);
   }
 }
+
+.doneTag {
+  padding: 12px 22px;
+  border-radius: 14px;
+  background: #e8f5e0;
+  color: #2d8b57;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.englishTrace {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  margin: 10px auto 18px;
+  background: #fff4e0;
+  border: 4px dashed #ff8a3d;
+  border-radius: 20px;
+  max-width: 360px;
+}
+
+.englishChar {
+  font-family: "Comic Sans MS", "ZCOOL KuaiLe", sans-serif;
+  font-size: 64px;
+  color: #2d8b57;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+
+.englishPron {
+  font-size: 18px;
+  color: #b85700;
+  margin-top: 6px;
+}
+
+.mistakesHint {
+  font-size: 13px;
+  color: #e74c3c;
+  margin-left: 6px;
+}
+
+.assessmentGreat {
+  color: #f1c40f;
+}
+
+.assessmentOk {
+  color: #3498db;
+}
+
+.assessmentPoor {
+  color: #e74c3c;
+}

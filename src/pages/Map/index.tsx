@@ -1,8 +1,10 @@
 import { useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { LEVELS, getLevelChars } from '@/data/hanziData';
+import { getLevelChars, getLevelsForLanguage, getLevel } from '@/data/hanziData';
 import { useProgressStore } from '@/store/progressStore';
+import { useLanguageStore } from '@/store/languageStore';
 import { ROUTES } from '@/routes';
+import LanguageSwitcher from '@components/LanguageSwitcher';
 import type { LevelId } from '@/types/global';
 import styles from './index.module.scss';
 
@@ -241,6 +243,7 @@ function Map() {
   const { level } = useParams();
   const navigate = useNavigate();
   const { data, setLevel } = useProgressStore();
+  const language = useLanguageStore((s) => s.language);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
   const scrollLeftRef = useRef<number>(0);
@@ -248,8 +251,14 @@ function Map() {
   // 预渲染花朵的离屏 canvas，避免每帧重复绘制
   const flowerCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  const levelsForLang = useMemo(() => getLevelsForLanguage(language), [language]);
   const levelId: LevelId = (level as LevelId) ?? data.currentLevel;
-  const levelInfo = useMemo(() => LEVELS.find((l) => l.id === levelId) ?? LEVELS[0], [levelId]);
+  const levelInfo = useMemo(
+    () =>
+      getLevel(levelId as LevelId) ??
+      (levelsForLang[0] as { id: LevelId; name: string; subtitle: string; unlockStars: number; bgColor: string }),
+    [levelId, levelsForLang]
+  );
   const chars = useMemo(() => getLevelChars(levelId), [levelId]);
   const nodePositions = useMemo(() => generateNodePositions(chars.length), [chars.length]);
 
@@ -564,18 +573,55 @@ function Map() {
     navigate(`/map/${lid}`);
   }
 
+  const isEnglish = language === 'en';
+  const backHomeLabel = isEnglish ? '← Home' : '← 回家';
+  const starsLabel = isEnglish ? `⭐ ${data.totalStars}` : `⭐ ${data.totalStars}`;
+  const emptyTitle = isEnglish ? '🌱 Words are still sleeping…' : '🌱 字灵们还在沉睡中…';
+  const emptySub = isEnglish
+    ? 'This area waits to be explored. Try earlier islands first!'
+    : '这片区域正在等待探索，请先挑战前面的岛屿吧！';
+
   return (
     <div className={styles.mapContainer}>
       <header className={styles.topBar}>
         <button className={styles.backBtn} onClick={() => navigate('/')}>
-          ← 回家
+          {backHomeLabel}
         </button>
         <div className={styles.titleWrap}>
-          <h2 className={styles.title}>🌲 {levelInfo.name} 🌲</h2>
-          <span className={styles.subtitle}>{levelInfo.subtitle}</span>
+          <h2 className={styles.title}>🌲 {levelInfo?.name} 🌲</h2>
+          <span className={styles.subtitle}>{levelInfo?.subtitle}</span>
         </div>
-        <div className={styles.starsTag}>⭐ {data.totalStars}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <LanguageSwitcher compact />
+          <div className={styles.starsTag}>{starsLabel}</div>
+        </div>
       </header>
+
+      <section className={styles.levelSwitcher}>
+        {levelsForLang.map((lvl) => {
+          const charsForLvl = getLevelChars(lvl.id);
+          const doneCount = charsForLvl.filter(
+            (c) => data.charProgress[c.char]?.completed
+          ).length;
+          const pct = charsForLvl.length
+            ? Math.round((doneCount / charsForLvl.length) * 100)
+            : 0;
+          const active = lvl.id === levelId;
+          return (
+            <button
+              key={lvl.id}
+              className={`${styles.switchBtn} ${active ? styles.active : ''}`}
+              style={{ background: lvl.bgColor }}
+              onClick={() => switchLevel(lvl.id)}
+            >
+              <div className={styles.switchName}>{lvl.name}</div>
+              <div className={styles.switchSub}>
+                {doneCount}/{charsForLvl.length} ({pct}%)
+              </div>
+            </button>
+          );
+        })}
+      </section>
 
       <section className={styles.mapArea}>
         <div className={styles.scrollContainer}>
@@ -590,10 +636,8 @@ function Map() {
 
         {chars.length === 0 && (
           <div className={styles.empty}>
-            <p>🌱 字灵们还在沉睡中…</p>
-            <p className={styles.emptySub}>
-              这片区域正在等待探索，请先挑战前面的岛屿吧！
-            </p>
+            <p>{emptyTitle}</p>
+            <p className={styles.emptySub}>{emptySub}</p>
           </div>
         )}
       </section>

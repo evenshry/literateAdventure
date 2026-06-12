@@ -90,5 +90,41 @@
   background: #D4F1F4;
 }
 
+.levelSwitcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 18px;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.switchBtn {
+  flex: 1 1 120px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  text-align: center;
+  min-width: 120px;
+  font-family: inherit;
+}
+
+.switchBtn.active {
+  border-color: #2d8b57;
+  box-shadow: 0 2px 10px rgba(45, 139, 87, 0.2);
+}
+
+.switchName {
+  font-weight: 700;
+  font-size: 14px;
+  color: #1f3d2a;
+}
+
+.switchSub {
+  font-size: 12px;
+  color: #4a4a4a;
+}
+
+
 
 
