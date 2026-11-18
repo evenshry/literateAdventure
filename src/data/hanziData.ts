@@ -1,17 +1,16 @@
 import type { LevelInfo, HanziData, LevelId, Language } from '@/types/global';
-import { L1_DATA, L1_CHARS } from './levels/L1';
-import { L2_DATA, L2_CHARS } from './levels/L2';
-import { L3_DATA, L3_CHARS } from './levels/L3';
-import { L4_DATA, L4_CHARS } from './levels/L4';
-import { EN1_DATA, EN1_CHARS } from './levels/EN1';
-import { EN2_DATA, EN2_CHARS } from './levels/EN2';
-import { EN3_DATA, EN3_CHARS } from './levels/EN3';
-import { EN4_DATA, EN4_CHARS } from './levels/EN4';
+import { L1_DATA } from './levels/L1';
+import { L2_DATA } from './levels/L2';
+import { L3_DATA } from './levels/L3';
+import { L4_DATA } from './levels/L4';
+import { EN1_DATA } from './levels/EN1';
+import { EN2_DATA } from './levels/EN2';
+import { EN3_DATA } from './levels/EN3';
+import { EN4_DATA } from './levels/EN4';
 import { getTonePinyin } from '@/utils/pinyin';
 
 /**
- * Raw level infos (English display names). UI should localize via i18n if
- * needed by reading LEVELS[i].id → `island.<ID>.name/subtitle` keys.
+ * 关卡信息（数据里的名字只作为默认值，界面按语言用 i18n 的 island.<ID> 覆盖）
  */
 export const LEVELS: LevelInfo[] = [
   { id: 'L1', name: '启蒙岛', subtitle: '认识最基础的汉字', unlockStars: 0, bgColor: '#e8f5e0' },
@@ -24,7 +23,9 @@ export const LEVELS: LevelInfo[] = [
   { id: 'EN4', name: 'Story Cove', subtitle: 'Short phrases & sentences', unlockStars: 180, bgColor: '#f5e6ff' },
 ];
 
-/** Attach tonePinyin for Chinese characters (English data leaves pinyin as IPA). */
+const LEVEL_ORDER: LevelId[] = ['L1', 'L2', 'L3', 'L4', 'EN1', 'EN2', 'EN3', 'EN4'];
+
+/** 为中文字符补充带声调的拼音（英文数据保留原有音标） */
 function withTonePinyin(data: HanziData[]): HanziData[] {
   return data.map((item) => ({
     ...item,
@@ -33,34 +34,7 @@ function withTonePinyin(data: HanziData[]): HanziData[] {
   }));
 }
 
-const ALL_DATA: HanziData[] = [
-  ...withTonePinyin([...L1_DATA, ...L2_DATA, ...L3_DATA, ...L4_DATA]),
-  ...EN1_DATA,
-  ...EN2_DATA,
-  ...EN3_DATA,
-  ...EN4_DATA,
-];
-
-export const HANZI_DB: Record<string, HanziData> = ALL_DATA.reduce(
-  (acc, hanzi) => {
-    acc[hanzi.char] = hanzi;
-    return acc;
-  },
-  {} as Record<string, HanziData>
-);
-
-const CHARS_BY_LEVEL: Record<LevelId, string[]> = {
-  L1: L1_CHARS,
-  L2: L2_CHARS,
-  L3: L3_CHARS,
-  L4: L4_CHARS,
-  EN1: EN1_CHARS,
-  EN2: EN2_CHARS,
-  EN3: EN3_CHARS,
-  EN4: EN4_CHARS,
-};
-
-const DATA_BY_LEVEL: Record<LevelId, HanziData[]> = {
+const RAW_BY_LEVEL: Record<LevelId, HanziData[]> = {
   L1: withTonePinyin(L1_DATA),
   L2: withTonePinyin(L2_DATA),
   L3: withTonePinyin(L3_DATA),
@@ -70,6 +44,33 @@ const DATA_BY_LEVEL: Record<LevelId, HanziData[]> = {
   EN3: EN3_DATA,
   EN4: EN4_DATA,
 };
+
+/**
+ * 每个字只归属一个关卡：后出现的重复字（如 L1/L2 都有「水」）会被去掉，
+ * 否则 HANZI_DB 会被后者覆盖，学习进度也会因为按字符记录而互相串联。
+ */
+const DATA_BY_LEVEL = (() => {
+  const seen = new Set<string>();
+  const result = {} as Record<LevelId, HanziData[]>;
+  for (const level of LEVEL_ORDER) {
+    result[level] = RAW_BY_LEVEL[level].filter((item) => {
+      if (seen.has(item.char)) return false;
+      seen.add(item.char);
+      return true;
+    });
+  }
+  return result;
+})();
+
+const ALL_DATA: HanziData[] = LEVEL_ORDER.flatMap((level) => DATA_BY_LEVEL[level]);
+
+export const HANZI_DB: Record<string, HanziData> = ALL_DATA.reduce(
+  (acc, hanzi) => {
+    acc[hanzi.char] = hanzi;
+    return acc;
+  },
+  {} as Record<string, HanziData>
+);
 
 export function getHanzi(char: string): HanziData | undefined {
   return HANZI_DB[char];
@@ -83,24 +84,8 @@ export function getLevel(id: LevelId): LevelInfo | undefined {
   return LEVELS.find((l) => l.id === id);
 }
 
-export function getAllHanzis(language?: Language): HanziData[] {
-  if (!language) return ALL_DATA;
-  return ALL_DATA.filter((h) =>
-    language === 'zh' ? !h.level.startsWith('EN') : h.level.startsWith('EN')
-  );
-}
-
-export function getTotalCharCount(language?: Language): number {
-  return getAllHanzis(language).length;
-}
-
 export function getLevelsForLanguage(language: Language): LevelInfo[] {
   return LEVELS.filter((l) =>
     language === 'zh' ? !l.id.startsWith('EN') : l.id.startsWith('EN')
   );
-}
-
-export function isEnglishChar(char: string): boolean {
-  const h = HANZI_DB[char];
-  return !!h && h.level.startsWith('EN');
 }
