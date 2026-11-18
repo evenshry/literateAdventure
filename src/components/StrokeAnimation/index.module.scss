@@ -17,9 +17,31 @@
   }
 }
 
+.grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
 .writerContainer {
+  position: relative;
+  z-index: 1;
   display: block;
+  width: 100%;
+  height: 100%;
   border-radius: 0px;
+}
+
+.errorText {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #b26b4a;
+  font-size: 14px;
+  background: #fffbe6;
 }
 
 .loading {

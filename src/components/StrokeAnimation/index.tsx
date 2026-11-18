@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import HanziWriter from 'hanzi-writer';
+import { charDataLoader } from '@/utils/hanziLoader';
 import styles from './index.module.scss';
 
 interface Props {
@@ -10,38 +11,41 @@ interface Props {
 }
 
 function StrokeAnimation({ char, size = 300, autoPlay = true, onComplete }: Props) {
-  const containerRef = useRef<HTMLElement>(null);
-  const writerRef = useRef<any>(null);
-  const initializedRef = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const writerRef = useRef<HanziWriter | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnimating, setIsAnimating] = useState(false);
   const [currentStroke, setCurrentStroke] = useState(0);
   const [totalStrokes, setTotalStrokes] = useState(0);
   const [loadError, setLoadError] = useState(false);
 
+  const totalStrokesRef = useRef(0);
+
   const play = useCallback(() => {
     if (!writerRef.current) return;
     setIsAnimating(true);
     writerRef.current.animateCharacter({
-      onStrokeComplete: (strokeData: { strokeNum: number }) => {
-        setCurrentStroke(strokeData.strokeNum);
-      },
       onComplete: () => {
         setIsAnimating(false);
-        setCurrentStroke(totalStrokes);
+        setCurrentStroke(totalStrokesRef.current);
         onComplete?.();
       },
     });
-  }, [totalStrokes, onComplete]);
+  }, [onComplete]);
 
   useEffect(() => {
-    if (!containerRef.current || initializedRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    initializedRef.current = true;
     setIsLoading(true);
     setLoadError(false);
+    setCurrentStroke(0);
+    setTotalStrokes(0);
+    totalStrokesRef.current = 0;
 
-    const writer = HanziWriter.create(containerRef.current!, char, {
+    let autoPlayTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const writer = HanziWriter.create(container, char, {
       width: size,
       height: size,
       padding: size * 0.08,
@@ -52,23 +56,32 @@ function StrokeAnimation({ char, size = 300, autoPlay = true, onComplete }: Prop
       strokeAnimationSpeed: 1,
       delayBetweenStrokes: 200,
       strokeWidth: Math.floor(size * 0.025),
+      charDataLoader,
       onLoadCharDataSuccess: (data) => {
+        totalStrokesRef.current = data.strokes.length;
         setTotalStrokes(data.strokes.length);
         setIsLoading(false);
         if (autoPlay) {
-          setTimeout(() => play(), 500);
+          autoPlayTimer = setTimeout(() => play(), 500);
         }
+      },
+      onLoadCharDataError: () => {
+        setIsLoading(false);
+        setLoadError(true);
       },
     });
 
     writerRef.current = writer;
 
     return () => {
-      if (writerRef.current) {
-        writerRef.current.destroy?.();
+      if (autoPlayTimer) clearTimeout(autoPlayTimer);
+      writer.cancelQuiz();
+      container.innerHTML = '';
+      if (writerRef.current === writer) {
+        writerRef.current = null;
       }
     };
-  }, []);
+  }, [char, size, autoPlay, play]);
 
   if (loadError) {
     return (
@@ -81,11 +94,11 @@ function StrokeAnimation({ char, size = 300, autoPlay = true, onComplete }: Prop
   return (
     <div className={styles.container} style={{ width: size, height: size }}>
       <svg
-        ref={containerRef as any}
-        className={styles.writerContainer}
+        className={styles.grid}
         width={size}
         height={size}
-        xmlns="http://www.w3.org/2000/svg"
+        viewBox={`0 0 ${size} ${size}`}
+        aria-hidden="true"
       >
         <line x1="0" y1="0" x2={size} y2={size} stroke="#E8E8E8" strokeWidth="1" />
         <line x1={size} y1="0" x2="0" y2={size} stroke="#E8E8E8" strokeWidth="1" />
@@ -99,9 +112,9 @@ function StrokeAnimation({ char, size = 300, autoPlay = true, onComplete }: Prop
           fill="none"
           stroke="#DDD"
           strokeWidth="2"
-          radius={18}
         />
       </svg>
+      <div ref={containerRef} className={styles.writerContainer} />
 
       {isLoading && (
         <div className={styles.loading}>
