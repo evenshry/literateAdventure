@@ -1,21 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { speak } from '@/utils/speech';
 import { useSound } from '@/hooks/useSound';
 import { useProgressStore } from '@/store/progressStore';
+import { shuffle } from '@/utils/helpers';
 import type { StepPracticeProps } from './types';
 import type { PracticeQuestion } from '@/types/global';
 import styles from './index.module.scss';
 
-const WRONG_THRESHOLD = 2; // 连续答错此次数后加入错字本
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
+const WRONG_THRESHOLD = 2; // 连续答错达到此次数后加入错字本
 
 function getTip(type: PracticeQuestion['type'], char: string): string {
   if (type === 'match') return `💡 读一读每个词语，找找哪个有「${char}」`;
@@ -24,30 +16,35 @@ function getTip(type: PracticeQuestion['type'], char: string): string {
 }
 
 function StepPractice({ hanzi, completed, onComplete }: StepPracticeProps) {
-  const practiceData = hanzi.practice ?? [];
-  const { addWrong } = useProgressStore();
+  const practiceData = useMemo(() => hanzi.practice ?? [], [hanzi.practice]);
+  const addWrong = useProgressStore((s) => s.addWrong);
 
   const [idx, setIdx] = useState(0);
   const [score, setScore] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
   const [shake, setShake] = useState(false);
   const [finished, setFinished] = useState(completed);
-  const [shuffledOptions, setShuffledOptions] = useState<string[]>(() =>
-    shuffle(practiceData[0]?.options ?? [])
-  );
   const { playCorrect, playWrong, playComplete } = useSound();
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // 跟踪连续答错的次数
   const consecutiveWrongRef = useRef(0);
 
   const needCorrect = Math.min(3, practiceData.length);
-  const currentQ = practiceData[idx % practiceData.length];
+  const currentQ = practiceData[idx % practiceData.length] ?? practiceData[0];
 
   // 切换题目时打乱选项
+  const shuffledOptions = useMemo(
+    () => shuffle(practiceData[idx % practiceData.length]?.options ?? []),
+    [idx, practiceData]
+  );
+
   useEffect(() => {
-    setShuffledOptions(shuffle(practiceData[idx % practiceData.length]?.options ?? []));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idx]);
+    return () => {
+      timersRef.current.forEach(clearTimeout);
+      timersRef.current = [];
+    };
+  }, []);
 
   function onPick(option: string) {
     if (picked) return;
@@ -58,16 +55,18 @@ function StepPractice({ hanzi, completed, onComplete }: StepPracticeProps) {
       const nextScore = score + 1;
       setScore(nextScore);
       void speak('答对啦！', { rate: 1.1 });
-      setTimeout(() => {
-        if (nextScore >= needCorrect) {
-          playComplete();
-          setFinished(true);
-          onComplete();
-        } else {
-          setIdx((i) => i + 1);
-          setPicked(null);
-        }
-      }, 900);
+      timersRef.current.push(
+        setTimeout(() => {
+          if (nextScore >= needCorrect) {
+            playComplete();
+            setFinished(true);
+            onComplete();
+          } else {
+            setIdx((i) => i + 1);
+            setPicked(null);
+          }
+        }, 900)
+      );
     } else {
       consecutiveWrongRef.current += 1;
       // 连续答错达到阈值，加入错字本
@@ -77,8 +76,8 @@ function StepPractice({ hanzi, completed, onComplete }: StepPracticeProps) {
       playWrong();
       setShake(true);
       void speak('再试试！', { rate: 1.1 });
-      setTimeout(() => setShake(false), 500);
-      setTimeout(() => setPicked(null), 800);
+      timersRef.current.push(setTimeout(() => setShake(false), 500));
+      timersRef.current.push(setTimeout(() => setPicked(null), 800));
     }
   }
 
@@ -87,7 +86,6 @@ function StepPractice({ hanzi, completed, onComplete }: StepPracticeProps) {
     setScore(0);
     setPicked(null);
     consecutiveWrongRef.current = 0;
-    setShuffledOptions(shuffle(practiceData[0]?.options ?? []));
     setFinished(false);
   }
 

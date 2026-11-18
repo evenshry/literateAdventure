@@ -35,6 +35,14 @@ function ShooterGame({ hanzi, onComplete }: ShooterGameProps) {
   const [mistakes, setMistakes] = useState(0);
   const [showFeedback, setShowFeedback] = useState<string | null>(null);
 
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+    };
+  }, []);
+
   const { playClick, playCorrect, playWrong, playStar, playComplete } = useSound();
 
   // 初始化游戏
@@ -156,7 +164,8 @@ function ShooterGame({ hanzi, onComplete }: ShooterGameProps) {
             void speak('抓错了，再找找！', { rate: 1.0 });
           }
 
-          setTimeout(() => setShowFeedback(null), 800);
+          if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+          feedbackTimerRef.current = setTimeout(() => setShowFeedback(null), 800);
           setScore(state.score);
           setMistakes(state.mistakes);
 
@@ -186,7 +195,7 @@ function ShooterGame({ hanzi, onComplete }: ShooterGameProps) {
     return () => {
       cancelAnimationFrame(animationRef.current);
     };
-  }, []);
+  }, [hanzi.char, playCorrect, playWrong, playStar, playComplete]);
 
   // 初始化
   useEffect(() => {

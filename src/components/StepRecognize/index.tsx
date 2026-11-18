@@ -7,14 +7,18 @@ import styles from './index.module.scss';
 
 function StepRecognize({ hanzi, completed, onComplete }: StepRecognizeProps) {
   const [watched, setWatched] = useState(completed);
-  const { playClick, playSelect } = useSound();
+  const { playSelect } = useSound();
+  const isEnglish = hanzi.level.startsWith('EN');
 
   function playPronunciation() {
-    void speak(hanzi.char, { rate: 0.65, pitch: 1.2 });
+    void speak(hanzi.char, { rate: 0.65, pitch: 1.2, lang: isEnglish ? 'en' : 'zh' });
   }
 
   function playMeaning() {
-    void speak(`${hanzi.char}。${hanzi.meaning}。${hanzi.examples.join('，')}。`, { rate: 0.8 });
+    void speak(`${hanzi.char}。${hanzi.meaning}。${hanzi.examples.join('，')}。`, {
+      rate: 0.8,
+      lang: isEnglish ? 'en' : 'zh',
+    });
   }
 
   function confirm() {
@@ -54,7 +58,7 @@ function StepRecognize({ hanzi, completed, onComplete }: StepRecognizeProps) {
             <button
               key={w}
               className={styles.chip}
-              onClick={() => void speak(w)}
+              onClick={() => void speak(w, { lang: isEnglish ? 'en' : 'zh' })}
             >
               {w}
             </button>
@@ -68,7 +72,7 @@ function StepRecognize({ hanzi, completed, onComplete }: StepRecognizeProps) {
           {hanzi.sentences.map((s: string, i: number) => {
           const parts = s.split(hanzi.char);
           return (
-            <li key={i} onClick={() => void speak(s)}>
+            <li key={i} onClick={() => void speak(s, { lang: isEnglish ? 'en' : 'zh' })}>
               {parts.map((p: string, idx: number) => (
               <span key={idx}>
                 {p}

@@ -13,6 +13,8 @@ function StepRead({ hanzi, completed, onComplete }: StepReadProps) {
   const chunksRef = useRef<BlobPart[]>([]);
   const { playCorrect, playClick } = useSound();
 
+  const isEnglish = hanzi.level.startsWith('EN');
+
   useEffect(() => {
     if (!navigator.mediaDevices || !window.MediaRecorder) {
       setMicSupported(false);
@@ -20,7 +22,7 @@ function StepRead({ hanzi, completed, onComplete }: StepReadProps) {
   }, []);
 
   function playSentence(s: string) {
-    void speak(s, { rate: 0.8 });
+    void speak(s, { rate: 0.8, lang: isEnglish ? 'en' : 'zh' });
   }
 
   async function startRecord() {
@@ -37,9 +39,14 @@ function StepRead({ hanzi, completed, onComplete }: StepReadProps) {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const mimeType = recorder.mimeType || 'audio/webm';
+        const blob = new Blob(chunksRef.current, { type: mimeType });
         const url = URL.createObjectURL(blob);
-        setAudioUrl(url);
+        // 释放上一次录音的 Blob URL，避免内存泄漏
+        setAudioUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return url;
+        });
         stream.getTracks().forEach((t) => t.stop());
       };
       recorder.start();

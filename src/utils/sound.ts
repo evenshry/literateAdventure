@@ -23,7 +23,11 @@ function getAudioContext(): AudioContext | null {
     return null;
   }
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const Ctor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return null;
+    audioCtx = new Ctor();
   }
   // Safari/iOS 需要在用户手势后 resume，否则声音被浏览器静音
   if (audioCtx.state === 'suspended' && userGestureActive) {
@@ -168,8 +172,4 @@ export function playClick() {
  */
 export function playSelect() {
   playTone(440, 0.08, 'sine', 0.15);
-}
-
-export function isAudioSupported(): boolean {
-  return !!(window.AudioContext || (window as any).webkitAudioContext);
 }

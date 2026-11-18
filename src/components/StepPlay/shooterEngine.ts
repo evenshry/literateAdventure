@@ -1,3 +1,5 @@
+import { shuffle } from '@/utils/helpers';
+
 // 敌人
 export interface ShooterEnemy {
   id: number;
@@ -34,7 +36,9 @@ export interface Bullet {
   id: number;
   x: number;
   y: number;
-  speed: 3;
+  /** 发射瞬间的炮口角度，飞行途中不再改变 */
+  angle: number;
+  speed: number;
 }
 
 // 击中特效
@@ -64,6 +68,8 @@ export interface ShooterGameState {
   bulletIdCounter: number;
   hintActive: boolean;
   hintEndTime: number;
+  /** 击落后补充敌人的倒计时（秒），0 表示无需补充 */
+  spawnDelay: number;
 }
 
 // 混淆字池
@@ -125,9 +131,7 @@ function getDistractorsForChar(char: string): string[] {
   if (DISTRACTOR_PAIRS[char]) {
     return DISTRACTOR_PAIRS[char];
   }
-  return DEFAULT_DISTRACTORS.filter((c) => c !== char)
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 5);
+  return shuffle(DEFAULT_DISTRACTORS.filter((c) => c !== char)).slice(0, 5);
 }
 
 // 初始化游戏
@@ -159,6 +163,7 @@ export function initShooterGame(targetChar: string): ShooterGameState {
     bulletIdCounter: 0,
     hintActive: false,
     hintEndTime: 0,
+    spawnDelay: 0,
   };
 }
 
@@ -168,8 +173,7 @@ export function spawnEnemies(state: ShooterGameState, count: number = 10): void 
   const targetCount = 3;
 
   // 生成随机排列的位置索引
-  const positions = Array.from({ length: count }, (_, i) => i);
-  const shuffled = positions.sort(() => Math.random() - 0.5);
+  const shuffled = shuffle(Array.from({ length: count }, (_, i) => i));
   const targetPositions = shuffled.slice(0, targetCount);
 
   // 生成所有敌人
@@ -221,6 +225,7 @@ export function startGame(state: ShooterGameState): void {
   state.hitEffects = [];
   state.screenShake = 0;
   state.cannon.cooldown = 0;
+  state.spawnDelay = 0;
   spawnEnemies(state);
 }
 
@@ -250,6 +255,18 @@ export function updateEnemies(state: ShooterGameState, deltaTime: number): void 
     }
     return true;
   });
+
+  // 击落敌人后延迟补充
+  if (state.spawnDelay > 0 && state.phase === 'playing') {
+    state.spawnDelay -= deltaTime;
+    if (state.spawnDelay <= 0) {
+      state.spawnDelay = 0;
+      const x = Math.random() > 0.5 ? 5 : 95;
+      const y = 15 + Math.random() * 25;
+      const isTarget = Math.random() < 0.35;
+      state.enemies.push(createEnemy(state, x, y, isTarget));
+    }
+  }
 }
 
 // 更新大炮
@@ -263,28 +280,22 @@ export function updateCannon(state: ShooterGameState, deltaTime: number): void {
   state.cannon.angle += angleDiff * 0.15;
 }
 
-// 设置瞄准角度
-export function aimCannon(state: ShooterGameState, angle: number): void {
-  state.cannon.targetAngle = Math.max(-50, Math.min(50, angle));
-}
-
 // 发射
-export function fire(state: ShooterGameState): ShooterEnemy | null {
+export function fire(state: ShooterGameState): void {
   if (state.cannon.cooldown > 0 || state.phase !== 'playing') {
-    return null;
+    return;
   }
 
   state.cannon.cooldown = state.cannon.maxCooldown;
 
-  // 创建子弹，使用当前大炮角度
+  // 创建子弹，记录发射瞬间的角度，飞行中不再跟随炮口转向
   state.bullets.push({
     id: state.bulletIdCounter++,
     x: state.cannon.x,
     y: state.cannon.y - 5,
+    angle: state.cannon.angle,
     speed: 3,
   });
-
-  return null; // 不再使用射线检测，返回null
 }
 
 // 检测子弹与敌人的碰撞
@@ -342,15 +353,8 @@ export function checkBulletCollisions(state: ShooterGameState): ShooterEnemy | n
           state.phase = 'gameover';
         }
 
-        // 补充敌人
-        setTimeout(() => {
-          if (state.phase === 'playing') {
-            const x = Math.random() > 0.5 ? 5 : 95;
-            const y = 15 + Math.random() * 25;
-            const isTarget = Math.random() < 0.35;
-            state.enemies.push(createEnemy(state, x, y, isTarget));
-          }
-        }, 600);
+        // 补充敌人（由 updateEnemies 按游戏时间计时，避免组件卸载后仍触发定时器）
+        state.spawnDelay = 0.6;
 
         hitEnemy = enemy;
         break;
@@ -362,14 +366,10 @@ export function checkBulletCollisions(state: ShooterGameState): ShooterEnemy | n
   return hitEnemy;
 }
 
-// 更新子弹（使用累积角度）
+// 更新子弹
 export function updateBullets(state: ShooterGameState, deltaTime: number): void {
-  // 存储每个子弹的发射角度
-  if (!state.bullets) return;
-
-  // 清理已爆炸的子弹
   state.bullets = state.bullets.filter((b) => {
-    const angleRad = ((-90 + state.cannon.angle) * Math.PI) / 180;
+    const angleRad = ((-90 + b.angle) * Math.PI) / 180;
     b.x += Math.cos(angleRad) * b.speed * deltaTime * 12;
     b.y += Math.sin(angleRad) * b.speed * deltaTime * 12;
     return b.y > -10 && b.y < 100 && b.x > -10 && b.x < 110;
@@ -458,10 +458,7 @@ export function drawShooterGame(
   drawHitEffects(ctx, state, scaleX, scaleY);
 
   // 绘制大炮
-  drawCannon(ctx, state.cannon, scaleX, scaleY, time);
-
-  // 绘制UI
-  drawUI(ctx, state, width);
+  drawCannon(ctx, state.cannon, scaleX, scaleY);
 
   ctx.restore();
 }
@@ -961,15 +958,13 @@ function drawCannon(
   ctx: CanvasRenderingContext2D,
   cannon: Cannon,
   scaleX: number,
-  scaleY: number,
-  time: number
+  scaleY: number
 ): void {
   const x = cannon.x * scaleX;
   const y = cannon.y * scaleY;
 
   // 冷却状态
   const isCooling = cannon.cooldown > 0;
-  const alpha = isCooling ? 0.6 : 1;
 
   ctx.save();
   ctx.translate(x, y);
@@ -1112,9 +1107,4 @@ function drawCannon(
     ctx.textAlign = 'center';
     ctx.fillText('准备中...', x, y + 40);
   }
-}
-
-// 绘制UI（统计信息在组件外部显示，画布内不再绘制）
-function drawUI(ctx: CanvasRenderingContext2D, state: ShooterGameState, width: number): void {
-  // 空函数，统计信息已在组件外部显示
 }

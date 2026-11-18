@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { useProgressStore } from '@/store/progressStore';
 import * as sound from '@/utils/sound';
 
@@ -7,11 +7,11 @@ import * as sound from '@/utils/sound';
  * 仅在 audioFeedback 为 true 时播放音效
  */
 export function useSound() {
-  const { data } = useProgressStore();
-  
-  const enabled = useMemo(() => {
-    return data.settings.audioFeedback && data.settings.soundEnabled;
-  }, [data.settings.audioFeedback, data.settings.soundEnabled]);
+  // 只订阅设置项，避免进度数据更新时所有使用音效的组件重渲染
+  const audioFeedback = useProgressStore((s) => s.data.settings.audioFeedback);
+  const soundEnabled = useProgressStore((s) => s.data.settings.soundEnabled);
+
+  const enabled = audioFeedback && soundEnabled;
 
   const playCorrect = useCallback(() => {
     if (enabled) sound.playCorrect();

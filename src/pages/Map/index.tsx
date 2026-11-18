@@ -1,9 +1,10 @@
 import { useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getLevelChars, getLevelsForLanguage, getLevel } from '@/data/hanziData';
+import { getLevelChars, getLevelsForLanguage } from '@/data/hanziData';
 import { useProgressStore } from '@/store/progressStore';
 import { useLanguageStore } from '@/store/languageStore';
-import { ROUTES } from '@/routes';
+import { ROUTES } from '@/routes/paths';
+import { t, type DictKey } from '@/i18n/dict';
 import LanguageSwitcher from '@components/LanguageSwitcher';
 import type { LevelId } from '@/types/global';
 import styles from './index.module.scss';
@@ -253,12 +254,6 @@ function Map() {
 
   const levelsForLang = useMemo(() => getLevelsForLanguage(language), [language]);
   const levelId: LevelId = (level as LevelId) ?? data.currentLevel;
-  const levelInfo = useMemo(
-    () =>
-      getLevel(levelId as LevelId) ??
-      (levelsForLang[0] as { id: LevelId; name: string; subtitle: string; unlockStars: number; bgColor: string }),
-    [levelId, levelsForLang]
-  );
   const chars = useMemo(() => getLevelChars(levelId), [levelId]);
   const nodePositions = useMemo(() => generateNodePositions(chars.length), [chars.length]);
 
@@ -273,6 +268,16 @@ function Map() {
     const incompleteIdx = chars.findIndex((h) => !(data.charProgress[h.char]?.completed ?? false));
     return incompleteIdx === -1 ? chars.length - 1 : incompleteIdx;
   }, [chars, data.charProgress]);
+
+  // 用 ref 把频繁变化的数据传给渲染循环，避免每次进度更新都重建动画循环
+  const progressRef = useRef(data.charProgress);
+  const currentNodeIndexRef = useRef(currentNodeIndex);
+  useEffect(() => {
+    progressRef.current = data.charProgress;
+  }, [data.charProgress]);
+  useEffect(() => {
+    currentNodeIndexRef.current = currentNodeIndex;
+  }, [currentNodeIndex]);
 
   const treePositions = useMemo(() => {
     const count = Math.max(Math.floor(chars.length * 0.375), 1);
@@ -370,8 +375,11 @@ function Map() {
       if (!canvas) return;
 
       const rect = canvas.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
+      // canvas 可能被 CSS 缩放，需要换算回画布坐标
+      const scaleX = rect.width ? canvas.width / rect.width : 1;
+      const scaleY = rect.height ? canvas.height / rect.height : 1;
+      const clickX = (e.clientX - rect.left) * scaleX;
+      const clickY = (e.clientY - rect.top) * scaleY;
 
       for (let i = 0; i < nodePositions.length; i++) {
         const pos = nodePositions[i];
@@ -431,6 +439,11 @@ function Map() {
     let startTime = performance.now();
 
     const render = (currentTime: number) => {
+      animationRef.current = requestAnimationFrame(render);
+
+      // 页面不可见时不绘制，避免后台空转
+      if (document.hidden) return;
+
       const elapsed = (currentTime - startTime) / 1000;
 
       // draw sky
@@ -469,7 +482,7 @@ function Map() {
 
       // draw paths
       for (let i = 0; i < nodePositions.length - 1; i++) {
-        drawPath(ctx, [nodePositions[i], nodePositions[i + 1]], i, currentNodeIndex);
+        drawPath(ctx, [nodePositions[i], nodePositions[i + 1]], i, currentNodeIndexRef.current);
       }
 
       // draw nodes
@@ -478,10 +491,10 @@ function Map() {
         const h = chars[idx];
         if (!h) continue;
 
-        const cp = data.charProgress[h.char];
+        const cp = progressRef.current[h.char];
         const stars = cp?.stars ?? 0;
         const completed = cp?.completed ?? false;
-        const isCurrent = idx === currentNodeIndex;
+        const isCurrent = idx === currentNodeIndexRef.current;
 
         // node circle
         ctx.beginPath();
@@ -521,7 +534,7 @@ function Map() {
         ctx.restore();
 
         // node text - 始终显示汉字
-        ctx.font = `${completed ? 32 : 32}px "KaiTi", "STKaiti", serif`;
+        ctx.font = `32px "KaiTi", "STKaiti", serif`;
         ctx.fillStyle = completed ? '#2d8b57' : '#2b2b2b';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -557,16 +570,7 @@ function Map() {
       cancelAnimationFrame(animationRef.current);
       scrollParent?.removeEventListener('scroll', handleScroll);
     };
-  }, [
-    mapWidth,
-    nodePositions,
-    chars,
-    data.charProgress,
-    currentNodeIndex,
-    treePositions,
-    cloudPositions,
-    butterflyPositions,
-  ]);
+  }, [mapWidth, nodePositions, chars, treePositions, cloudPositions, butterflyPositions]);
 
   function switchLevel(lid: LevelId) {
     setLevel(lid);
@@ -575,7 +579,7 @@ function Map() {
 
   const isEnglish = language === 'en';
   const backHomeLabel = isEnglish ? '← Home' : '← 回家';
-  const starsLabel = isEnglish ? `⭐ ${data.totalStars}` : `⭐ ${data.totalStars}`;
+  const starsLabel = `⭐ ${data.totalStars}`;
   const emptyTitle = isEnglish ? '🌱 Words are still sleeping…' : '🌱 字灵们还在沉睡中…';
   const emptySub = isEnglish
     ? 'This area waits to be explored. Try earlier islands first!'
@@ -588,8 +592,12 @@ function Map() {
           {backHomeLabel}
         </button>
         <div className={styles.titleWrap}>
-          <h2 className={styles.title}>🌲 {levelInfo?.name} 🌲</h2>
-          <span className={styles.subtitle}>{levelInfo?.subtitle}</span>
+          <h2 className={styles.title}>
+            🌲 {t(language, `island.${levelId}.name` as DictKey)} 🌲
+          </h2>
+          <span className={styles.subtitle}>
+            {t(language, `island.${levelId}.subtitle` as DictKey)}
+          </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <LanguageSwitcher compact />
@@ -614,7 +622,9 @@ function Map() {
               style={{ background: lvl.bgColor }}
               onClick={() => switchLevel(lvl.id)}
             >
-              <div className={styles.switchName}>{lvl.name}</div>
+              <div className={styles.switchName}>
+                {t(language, `island.${lvl.id}.name` as DictKey)}
+              </div>
               <div className={styles.switchSub}>
                 {doneCount}/{charsForLvl.length} ({pct}%)
               </div>

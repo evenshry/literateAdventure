@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { playComplete, playStar } from '@/utils/sound';
+import { useSound } from '@/hooks/useSound';
 import styles from './index.module.scss';
 
 interface Props {
@@ -7,10 +7,12 @@ interface Props {
 }
 
 function StarCelebration({ stars }: Props) {
+  const { playComplete, playStar } = useSound();
+
   // 星星粒子
   const items = useMemo(
     () =>
-      Array.from({ length: 24 }, (_, i) => ({
+      Array.from({ length: 24 }, () => ({
         left: Math.random() * 100,
         delay: Math.random() * 0.8,
         duration: 1.4 + Math.random() * 1.2,
@@ -66,10 +68,12 @@ function StarCelebration({ stars }: Props) {
   useEffect(() => {
     playComplete();
     // 逐个播放星星音效
+    const timers: ReturnType<typeof setTimeout>[] = [];
     for (let i = 0; i < stars; i++) {
-      setTimeout(() => playStar(), i * 250 + 500);
+      timers.push(setTimeout(() => playStar(), i * 250 + 500));
     }
-  }, [stars]);
+    return () => timers.forEach(clearTimeout);
+  }, [stars, playComplete, playStar]);
 
   return (
     <div className={styles.overlay}>

@@ -15,7 +15,27 @@ interface ProgressState {
   resetAll: () => Promise<void>;
   toggleSound: () => void;
   toggleAudioFeedback: () => void;
-  _persist: (data: UserProgress) => Promise<void>;
+}
+
+// IndexedDB 写入串行化：并发写入容易因完成顺序不确定而互相覆盖，
+// 这里用一条 Promise 链保证顺序，并合并短时间内的连续写入。
+let persistChain: Promise<void> = Promise.resolve();
+let pendingData: UserProgress | null = null;
+
+function schedulePersist(data: UserProgress): Promise<void> {
+  pendingData = data;
+  persistChain = persistChain.then(async () => {
+    while (pendingData) {
+      const snapshot = pendingData;
+      pendingData = null;
+      try {
+        await saveProgress(snapshot);
+      } catch (e) {
+        console.error('[progress] 保存进度失败', e);
+      }
+    }
+  });
+  return persistChain;
 }
 
 function freshProgress(): UserProgress {
@@ -65,7 +85,7 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
     const state = get();
     const next = { ...state.data, currentLevel: level, updatedAt: Date.now() };
     set({ data: next });
-    void state._persist(next);
+    void schedulePersist(next);
   },
 
   markStepComplete(char, step) {
@@ -100,7 +120,7 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       updatedAt: Date.now(),
     };
     set({ data: nextData });
-    void state._persist(nextData);
+    void schedulePersist(nextData);
   },
 
   addWrong(char) {
@@ -120,7 +140,7 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       updatedAt: Date.now(),
     };
     set({ data: nextData });
-    void state._persist(nextData);
+    void schedulePersist(nextData);
   },
 
   awardStarsForChar(char, stars) {
@@ -137,7 +157,7 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       updatedAt: Date.now(),
     };
     set({ data: nextData });
-    void state._persist(nextData);
+    void schedulePersist(nextData);
   },
 
   addToWrongList(char) {
@@ -149,7 +169,7 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       updatedAt: Date.now(),
     };
     set({ data: nextData });
-    void state._persist(nextData);
+    void schedulePersist(nextData);
   },
 
   removeFromWrongList(char) {
@@ -161,10 +181,13 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       updatedAt: Date.now(),
     };
     set({ data: nextData });
-    void state._persist(nextData);
+    void schedulePersist(nextData);
   },
 
   async resetAll() {
+    // 等待已排队的写入完成，避免清空后又被旧数据覆盖
+    await persistChain;
+    pendingData = null;
     await clearProgress();
     const fresh = freshProgress();
     await saveProgress(fresh);
@@ -178,7 +201,7 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       settings: { ...state.data.settings, soundEnabled: !state.data.settings.soundEnabled },
     };
     set({ data: nextData });
-    void state._persist(nextData);
+    void schedulePersist(nextData);
   },
 
   toggleAudioFeedback() {
@@ -188,10 +211,6 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       settings: { ...state.data.settings, audioFeedback: !state.data.settings.audioFeedback },
     };
     set({ data: nextData });
-    void state._persist(nextData);
-  },
-
-  async _persist(data) {
-    await saveProgress(data);
+    void schedulePersist(nextData);
   },
 }));

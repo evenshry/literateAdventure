@@ -1,11 +1,11 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getHanzi } from '@/data/hanziData';
 import { useProgressStore } from '@/store/progressStore';
 import { useLanguageStore } from '@/store/languageStore';
 import { speak } from '@/utils/speech';
 import { useSound } from '@/hooks/useSound';
-import { ROUTES } from '@/routes';
+import { ROUTES } from '@/routes/paths';
 import LanguageSwitcher from '@components/LanguageSwitcher';
 import type { StepId } from '@/types/global';
 import StepPlay from '@components/StepPlay';
@@ -29,14 +29,22 @@ function Learn() {
   const navigate = useNavigate();
   const hanzi = useMemo(() => (char ? getHanzi(char) : undefined), [char]);
   const language = useLanguageStore((s) => s.language);
-  const { data, markStepComplete, awardStarsForChar } = useProgressStore();
+  const data = useProgressStore((s) => s.data);
+  const markStepComplete = useProgressStore((s) => s.markStepComplete);
+  const awardStarsForChar = useProgressStore((s) => s.awardStarsForChar);
   const { playCorrect, playStar, playComplete } = useSound();
 
   const [currentStep, setCurrentStep] = useState<StepId>('play');
   const [celebrate, setCelebrate] = useState<{ stars: number } | null>(null);
+  const autoStepCharRef = useRef<string | null>(null);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
+  // 只在切换字符时定位到第一个未完成的环节，避免每次进度更新都把用户手动选中的 tab 顶掉
   useEffect(() => {
     if (!hanzi) return;
+    if (autoStepCharRef.current === hanzi.char) return;
+    autoStepCharRef.current = hanzi.char;
+
     const cp = data.charProgress[hanzi.char];
     if (cp) {
       if (!cp.steps.play) setCurrentStep('play');
@@ -46,6 +54,14 @@ function Learn() {
       else if (!cp.steps.read) setCurrentStep('read');
     }
   }, [hanzi, data.charProgress]);
+
+  // 卸载时清理延迟跳转，避免在已卸载组件上更新状态
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach(clearTimeout);
+      timersRef.current = [];
+    };
+  }, []);
 
   if (!hanzi) {
     const msg = language === 'zh' ? '找不到这个字，回到首页看看吧～' : "Hmm, can't find this word — back home?";
@@ -71,21 +87,28 @@ function Learn() {
     void speak(language === 'zh' ? '真棒！' : 'Great job!', { rate: 1.0 });
     const idx = STEPS.findIndex((s) => s.id === stepId);
     if (idx < STEPS.length - 1) {
-      setTimeout(() => setCurrentStep(STEPS[idx + 1].id), 800);
+      timersRef.current.push(setTimeout(() => setCurrentStep(STEPS[idx + 1].id), 800));
     } else {
       awardStarsForChar(currentChar, 3);
       playStar();
       playComplete();
       setCelebrate({ stars: 3 });
-      setTimeout(() => {
-        setCelebrate(null);
-        navigate(`/map/${data.currentLevel}`);
-      }, 2800);
+      const level = useProgressStore.getState().data.currentLevel;
+      timersRef.current.push(
+        setTimeout(() => {
+          setCelebrate(null);
+          navigate(`/map/${level}`);
+        }, 2800)
+      );
     }
   }
 
   function handleSpeakChar() {
-    void speak(isEnglish ? currentChar : currentChar, { rate: isEnglish ? 0.85 : 0.7, pitch: 1.15 });
+    void speak(currentChar, {
+      rate: isEnglish ? 0.85 : 0.7,
+      pitch: 1.15,
+      lang: isEnglish ? 'en' : 'zh',
+    });
   }
 
   const backLabel = language === 'zh' ? '← 回地图' : '← Back to map';

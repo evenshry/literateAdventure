@@ -94,10 +94,18 @@ function WrongBook() {
           <h3 className={styles.listTitle}>{listHint}</h3>
           <div className={styles.grid}>
             {items.map((it) => (
-              <button
+              <div
                 key={it.char}
                 className={styles.charCard}
+                role="button"
+                tabIndex={0}
                 onClick={() => navigate(`/learn/${encodeURIComponent(it.char)}`)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    navigate(`/learn/${encodeURIComponent(it.char)}`);
+                  }
+                }}
               >
                 <button
                   className={styles.removeBtn}
@@ -112,7 +120,7 @@ function WrongBook() {
                 </div>
                 <div className={styles.meaning}>{it.data?.meaning}</div>
                 <div className={styles.smallTag}>{reviewTag}</div>
-              </button>
+              </div>
             ))}
           </div>
         </section>

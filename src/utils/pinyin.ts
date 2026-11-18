@@ -1,37 +1,3 @@
-const toneMap: Record<string, Record<number, string>> = {
-  'a': { 1: 'ā', 2: 'á', 3: 'ǎ', 4: 'à' },
-  'e': { 1: 'ē', 2: 'é', 3: 'ě', 4: 'è' },
-  'i': { 1: 'ī', 2: 'í', 3: 'ǐ', 4: 'ì' },
-  'o': { 1: 'ō', 2: 'ó', 3: 'ǒ', 4: 'ò' },
-  'u': { 1: 'ū', 2: 'ú', 3: 'ǔ', 4: 'ù' },
-  'v': { 1: 'ǖ', 2: 'ǘ', 3: 'ǚ', 4: 'ǜ' },
-  'ai': { 1: 'āi', 2: 'ái', 3: 'ǎi', 4: 'ài' },
-  'ei': { 1: 'ēi', 2: 'éi', 3: 'ěi', 4: 'èi' },
-  'ao': { 1: 'āo', 2: 'áo', 3: 'ǎo', 4: 'ào' },
-  'ou': { 1: 'ōu', 2: 'óu', 3: 'ǒu', 4: 'òu' },
-  'an': { 1: 'ān', 2: 'án', 3: 'ǎn', 4: 'àn' },
-  'en': { 1: 'ēn', 2: 'én', 3: 'ěn', 4: 'èn' },
-  'in': { 1: 'īn', 2: 'ín', 3: 'ǐn', 4: 'ìn' },
-  'un': { 1: 'ūn', 2: 'ún', 3: 'ǔn', 4: 'ùn' },
-  'ang': { 1: 'āng', 2: 'áng', 3: 'ǎng', 4: 'àng' },
-  'eng': { 1: 'ēng', 2: 'éng', 3: 'ěng', 4: 'èng' },
-  'ing': { 1: 'īng', 2: 'íng', 3: 'ǐng', 4: 'ìng' },
-  'ong': { 1: 'ōng', 2: 'óng', 3: 'ǒng', 4: 'òng' },
-};
-
-const vowels = ['ai', 'ei', 'ao', 'ou', 'an', 'en', 'in', 'un', 'ang', 'eng', 'ing', 'ong', 'a', 'e', 'i', 'o', 'u', 'v'];
-
-function addTone(pinyin: string, tone: number): string {
-  for (const vowel of vowels) {
-    const index = pinyin.indexOf(vowel);
-    if (index !== -1) {
-      const replacement = toneMap[vowel][tone] || vowel;
-      return pinyin.slice(0, index) + replacement + pinyin.slice(index + vowel.length);
-    }
-  }
-  return pinyin;
-}
-
 export const PinyinTones: Record<string, string> = {
   '一': 'yī',
   '二': 'èr',
