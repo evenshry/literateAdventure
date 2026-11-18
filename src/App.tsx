@@ -4,7 +4,8 @@ import { useProgressStore } from '@/store/progressStore';
 import { activateAudio } from '@/utils/sound';
 
 function App() {
-  const { init, ready } = useProgressStore();
+  const init = useProgressStore((s) => s.init);
+  const ready = useProgressStore((s) => s.ready);
 
   useEffect(() => {
     void init();
@@ -29,6 +30,7 @@ function App() {
     return (
       <div
         style={{
+          minHeight: '100vh',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

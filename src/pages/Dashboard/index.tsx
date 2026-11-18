@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useProgressStore } from '@/store/progressStore';
 import { useLanguageStore } from '@/store/languageStore';
 import { getHanzi, LEVELS, getLevelChars } from '@/data/hanziData';
+import { t, type DictKey } from '@/i18n/dict';
 import LanguageSwitcher from '@components/LanguageSwitcher';
 import styles from './index.module.scss';
 
@@ -105,8 +106,12 @@ function Dashboard() {
         <div className={styles.levelCards}>
           {stats.perLevel.map((lvl) => (
             <div key={lvl.id} className={styles.levelCard}>
-              <div className={styles.levelName}>{lvl.name}</div>
-              <div className={styles.levelSub}>{lvl.subtitle}</div>
+              <div className={styles.levelName}>
+                {t(language, `island.${lvl.id}.name` as DictKey)}
+              </div>
+              <div className={styles.levelSub}>
+                {t(language, `island.${lvl.id}.subtitle` as DictKey)}
+              </div>
               <div className={styles.levelBar}>
                 <div className={styles.levelFill} style={{ width: `${lvl.pct}%` }} />
                 <span className={styles.levelText}>

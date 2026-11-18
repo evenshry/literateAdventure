@@ -6,6 +6,7 @@
 
 import { lazy, Suspense, type JSX } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ROUTES } from './paths';
 
 // 懒加载页面组件
 const Home = lazy(() => import('@/pages/Home'));
@@ -13,7 +14,6 @@ const Map = lazy(() => import('@/pages/Map'));
 const Learn = lazy(() => import('@/pages/Learn'));
 const WrongBook = lazy(() => import('@/pages/WrongBook'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
-const TestStroke = lazy(() => import('@/pages/TestStroke'));
 
 // 加载中组件
 function LoadingFallback() {
@@ -39,28 +39,6 @@ function LoadingFallback() {
 function LazyWrapper({ children }: { children: JSX.Element }) {
   return <Suspense fallback={<LoadingFallback />}>{children}</Suspense>;
 }
-
-// 路由守卫（如需要登录验证）
-function PrivateRoute({ children }: { children: JSX.Element }) {
-  // 当前项目无需登录验证，直接返回
-  // 如需添加验证逻辑：
-  // const token = useUserStore((state) => state.token);
-  // return token ? children : <Navigate to="/login" replace />;
-  return children;
-}
-
-/**
- * 路由常量
- * 集中管理路径，避免硬编码字符串
- */
-export const ROUTES = {
-  HOME: '/',
-  MAP: '/map',
-  MAP_LEVEL: (level: string) => `/map/${level}`,
-  LEARN_CHAR: (char: string) => `/learn/${encodeURIComponent(char)}`,
-  WRONG: '/wrong',
-  DASHBOARD: '/dashboard',
-} as const;
 
 /**
  * 哈希模式路由应用
@@ -115,14 +93,6 @@ function AppRouter() {
           element={
             <LazyWrapper>
               <Dashboard />
-            </LazyWrapper>
-          }
-        />
-        <Route
-          path="/test-stroke"
-          element={
-            <LazyWrapper>
-              <TestStroke />
             </LazyWrapper>
           }
         />

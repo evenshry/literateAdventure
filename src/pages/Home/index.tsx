@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useProgressStore } from '@/store/progressStore';
 import { useLanguageStore } from '@/store/languageStore';
 import { getLevelChars, getLevelsForLanguage } from '@/data/hanziData';
-import { ROUTES } from '@/routes';
+import { ROUTES } from '@/routes/paths';
 import LanguageSwitcher from '@components/LanguageSwitcher';
 import type { LevelId } from '@/types/global';
-import { t } from '@/i18n/dict';
+import { t, type DictKey } from '@/i18n/dict';
 import styles from './index.module.scss';
 
 function Home() {
@@ -119,15 +119,9 @@ function Home() {
             const locked = data.totalStars < lvl.unlockStars && lvl.id !== levels[0]?.id;
             const doneCount = chars.filter((c) => data.charProgress[c.char]?.completed).length;
             const pct = chars.length ? Math.round((doneCount / chars.length) * 100) : 0;
-            // Localized name/subtitle via i18n dictionary (fallback to raw).
-            const localizedName =
-              (t(language, `island.${lvl.id}.name` as any) !== `island.${lvl.id}.name`
-                ? t(language, `island.${lvl.id}.name` as any)
-                : lvl.name) || lvl.name;
-            const localizedSub =
-              (t(language, `island.${lvl.id}.subtitle` as any) !== `island.${lvl.id}.subtitle`
-                ? t(language, `island.${lvl.id}.subtitle` as any)
-                : lvl.subtitle) || lvl.subtitle;
+            // 关卡名/副标题走 i18n
+            const localizedName = t(language, `island.${lvl.id}.name` as DictKey);
+            const localizedSub = t(language, `island.${lvl.id}.subtitle` as DictKey);
             return (
               <button
                 key={lvl.id}
