@@ -23,6 +23,9 @@ export default defineConfig(({ mode }) => {
     css: {
       preprocessorOptions: {
         scss: {
+          api: "modern-compiler",
+          // 项目仍使用 Sass @import 组织变量与 mixin，先屏蔽弃用提示，后续可平滑迁移到 @use
+          silenceDeprecations: ["import", "legacy-js-api"],
           additionalData: `@import "@styles/variables.scss";`,
         },
       },
