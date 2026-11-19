@@ -560,8 +560,6 @@ function Map() {
           ctx.globalAlpha = 1;
         }
       }
-
-      animationRef.current = requestAnimationFrame(render);
     };
 
     animationRef.current = requestAnimationFrame(render);
